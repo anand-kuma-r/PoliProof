@@ -9,6 +9,5 @@ I did this using `brew install mysql`, then start up the server (in two ways)
 Login and connect with `mysql -u root`
 
 
-
 ## Start up node backend
 Scripts are added to *package.json* under *scripts*. Use `npm run build` after navigating to backend directory to convert typescript to javascript, then `npm run start` to start up the server. Errors with connecting to database / running commands should be printed to console.

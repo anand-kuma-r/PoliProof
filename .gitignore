@@ -37,3 +37,6 @@ yarn-error.*
 
 # emitted file output
 output/
+
+# env files
+.env

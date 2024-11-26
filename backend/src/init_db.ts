@@ -1,6 +1,5 @@
-import e from 'express';
 import mysql from 'mysql2/promise';
-const fs = require('fs');
+import fs from 'fs';
 
 async function initDB() {
     let connection : mysql.Connection;
@@ -52,4 +51,13 @@ async function initDB() {
 
 }
 
-export default initDB;
+async function connectDB() : Promise<mysql.Connection> {
+    const connection = await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        database: 'PoliProof'
+    });
+    return connection;
+}
+
+export {initDB, connectDB};
