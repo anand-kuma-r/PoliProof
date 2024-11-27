@@ -18,3 +18,24 @@ OPTION B: James A. Garfield
 OPTION C: Ulysses S. Grant
 OPTION D: Grover Cleveland
 CORRECT ANSWER: D
+
+NAME: All About the Constitution
+DESCRIPTION: See how well you really know the US Constitution!
+QUESTION: How many amendments have been written into law?
+OPTION A: 22
+OPTION B: 34
+OPTION C: 27
+OPTION D: 14
+CORRECT ANSWER: C
+QUESTION: The US Constitution is the oldest and shortest written Constitution of any major government! Around how many words was the original document?
+OPTION A: 4550
+OPTION B: 2430
+OPTION C: 13400
+OPTION D: 9560
+CORRECT ANSWER: A
+QUESTION: Not every founding father took part in signing the Constitution! Which of the following people did NOT sign the Constitution?
+OPTION A: Alexander Hamilton
+OPTION B: Roger Sherman
+OPTION C: Benjamin Franklin
+OPTION D: Thomas Jefferson
+CORRECT ANSWER: A
