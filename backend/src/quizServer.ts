@@ -2,6 +2,20 @@ import { connectDB } from './init_db';
 import { Request, Response } from 'express';
 
 const eloRange = 200;
+const elo_K = 40;
+
+function eloDiff (elo1: number, elo2: number, winner: number) : number[] {
+    if (winner > 1) {
+        return [-1, -1];
+    }
+    const p1 = 1.0 / (1.0 + Math.pow(10, ((elo1 - elo2) / 400) ));
+    const p2 = 1.0 / (1.0 + Math.pow(10, ((elo2 - elo1) / 400) ));
+    return [elo1 + elo_K*( (1.0 - winner) - p1), elo2 + elo_K*(winner - p2)];
+}
+
+async function eloUpdate( req: Request, res: Response ) : Promise<void> {
+    const connection = await connectDB();
+}
 
 async function getQuiz( req: Request, res: Response ) : Promise<void> {
     const connection = await connectDB();
@@ -33,4 +47,4 @@ async function getQuiz( req: Request, res: Response ) : Promise<void> {
     }
 }
 
-export { getQuiz };
+export { getQuiz, eloUpdate};
