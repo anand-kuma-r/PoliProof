@@ -1,0 +1,20 @@
+NAME: Name the President
+DESCRIPTION: Identify the president who was in office during the year stated, based off the provided clues
+QUESTION: Which president was in office in 1790, and can be found in our wallets too?
+OPTION A: Abraham Lincoln
+OPTION B: George Washington
+OPTION C: Barack Obama
+OPTION D: Theodore Roosevelt
+CORRECT ANSWER: B
+QUESTION: Which president was in office in 1841, but only for a record short 32 days?
+OPTION A: William Henry Harrison
+OPTION B: Bill Clinton
+OPTION C: William Taft
+OPTION D: Andrew Jackson
+CORRECT ANSWER: A
+QUESTION: Donald Trump follows which only other president to serve non-consecutive terms, in office in 1886 as well as 1895?
+OPTION A: Franklin Pierce
+OPTION B: James A. Garfield
+OPTION C: Ulysses S. Grant
+OPTION D: Grover Cleveland
+CORRECT ANSWER: D
