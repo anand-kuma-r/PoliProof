@@ -1,9 +1,11 @@
-import { initDB, connectDB } from './init_db';
 import express, { Request, Response } from 'express';
 import session, { SessionData } from 'express-session';
 import bodyParser from 'body-parser';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
+
+import { initDB } from './init_db';
+import { login, signup } from './userManager';
 
 require('dotenv').config();
 
@@ -36,7 +38,6 @@ app.use(
 
 
 const port = 3000
-const baseELO = 1000
 
 app.all('/', (req: Request, res: Response) => {
     res.send('Hello World!')
@@ -44,7 +45,10 @@ app.all('/', (req: Request, res: Response) => {
 
 
 // Login route to authenticate user
-app.post('/login', async (req: Request, res: Response) : Promise<void> => {
+app.post('/login', login);
+
+/*
+async (req: Request, res: Response) : Promise<void> => {
     const { username, password } = req.body;
 
     const userLookupQuery = 'SELECT * FROM USER WHERE username = ?';
@@ -89,58 +93,10 @@ app.post('/login', async (req: Request, res: Response) : Promise<void> => {
     }
   });
 
+*/
+
+app.post('/signup', signup);
+
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
-});
-
-
-app.post('/signup', async (req: Request, res: Response) : Promise<void> => {
-    const { username, firstName, lastName, password } = req.body;
-  
-    // Validate the input (you can add more validation here)
-    if (!username || !firstName || !lastName || !password) {
-      res.status(400).send('username, firstName, lastName, and password are required');
-      return;
-    }
-  
-    try {
-        console.log(password);
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const connection = await connectDB();
-
-        const checkQuery = 'SELECT * FROM USER WHERE username = ?';
-        const [ rows ] = await connection.query(checkQuery, [username]);
-        if (Array.isArray(rows) && rows.length > 0) {
-            console.error('User already exists');
-            res.status(400).send('User already exists');
-            return;
-        }
-
-        // Save the new user to the database
-        const addQuery = 'INSERT INTO user (firstName, lastName, username, password, elo) VALUES (?, ?, ?, ?, ?)';
-        let [ result, fields ] = await connection.query(addQuery, [firstName, lastName, username, hashedPassword, baseELO]);
-        if ((result as mysql.OkPacket).affectedRows === 0 || !(result as mysql.OkPacket).insertId) {
-            console.error('Error inserting user');
-            res.status(500).send('Error creating user');
-            return;
-        }
-        else {
-            console.log('User registered successfully');
-            req.session.user = {
-                username,
-                firstName,
-                lastName,
-                elo: baseELO,
-            };
-            req.session.save();
-            res.status(201).send('User registered successfully');
-            return;
-        }
-    }
-    catch (error) {
-        console.error('Error inserting user:', error);
-        res.status(500).send('Error creating user');
-        return;
-    }
 });
