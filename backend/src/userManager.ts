@@ -102,4 +102,21 @@ async function login( req: Request, res: Response ) : Promise<void> {
     }
 }
 
-export { login, signup };
+async function logout( req: Request, res: Response ) : Promise<void> {
+    if (req.session && req.session.user) {
+        const username = req.session.user.username;
+        req.session.destroy(err => {
+            if (err) {
+            res.status(400).send('Unable to log out');
+            } else {
+            console.log('Logout successful for user ' + username);
+            res.status(200).send('Logout successful');
+            }
+        });
+    } else {
+        console.log('No user logged in');
+        res.status(400).send('No user logged in');
+    }
+}
+
+export { login, signup, logout };
