@@ -1,21 +1,84 @@
 import { RowDataPacket } from 'mysql2';
 import { connectDB } from './init_db';
 import { Request, Response } from 'express';
+import mysql from 'mysql2/promise';
 
 const eloRange = 200;
-const elo_K = 40;
+const elo_K = 20;
 
 function eloDiff (elo1: number, elo2: number, winner: number) : number[] {
     if (winner > 1) {
         return [-1, -1];
     }
-    const p1 = 1.0 / (1.0 + Math.pow(10, ((elo1 - elo2) / 400) ));
-    const p2 = 1.0 / (1.0 + Math.pow(10, ((elo2 - elo1) / 400) ));
-    return [ Math.max(0, elo1 + elo_K*( (1.0 - winner) - p1)), Math.max(0, elo2 + elo_K*(winner - p2))];
+    const p1 = 1.0 / (1.0 + Math.pow(10, ((elo2 - elo1) / 400) ));
+    const p2 = 1.0 / (1.0 + Math.pow(10, ((elo1 - elo2) / 400) ));
+    return [ Math.max(0, elo1 + elo_K*((1 - winner) - p1)), Math.max(0, elo2 + elo_K*(winner - p2))];
 }
 
 async function eloUpdate( req: Request, res: Response ) : Promise<void> {
+    if (!req.session || !req.session.user){
+        console.log('No user logged in');
+        res.status(400).send('No user logged in');
+        return;
+    }
+    if (!req.body || !req.body.quizId){
+        console.log('No quiz id provided');
+        res.status(400).send('No quiz id provided');
+        return;
+    }
+    if (!req.body.questionResults || req.body.questionResults.length == 0){
+        console.log('No question results provided');
+        res.status(400).send('No question results provided');
+        return;
+    }
     const connection = await connectDB();
+    let userElo = req.session.user.elo;
+    let totalElo = 0;
+
+    const userUpdateQuery = 'UPDATE USER SET elo = ? WHERE id = ?';
+    const questionUpdateQuery = 'UPDATE QUESTION SET elo = ? WHERE id = ?';
+    const quizUpdateQuery = 'UPDATE QUIZ SET totalElo = ? WHERE id = ?';
+
+    for (const [ key, winResult ] of req.body.questionResults) {
+        const [ question ] = await connection.query('SELECT * FROM QUESTION WHERE id = ?', [ Number(key) ]);
+        if (!Array.isArray(question) || question.length === 0) {
+            res.status(404).send('Missing Question');
+            continue;
+        }
+        if (winResult > 1) { // 1 indicates right user answer, 0 indicates wrong
+            console.log('Invalid question result');
+            res.status(400).send('Invalid question result');
+            continue;
+        }
+        const [ newQuestionElo, newUserElo ] = eloDiff((question[0] as RowDataPacket).elo, userElo, winResult);
+        if (newUserElo < 0 || newQuestionElo < 0) {
+            console.log('Invalid elo update');
+            continue; 
+        }
+        totalElo += newQuestionElo;
+        userElo = newUserElo;
+        const [ resultQuestion, fieldsQuestion ] = await connection.query(questionUpdateQuery, [ newQuestionElo, Number(key) ]);
+        if ((resultQuestion as mysql.OkPacket).affectedRows === 0) {
+            console.log('Error updating question');
+            continue;
+        }
+
+    }
+    const [ resultUser, fieldsUser ] = await connection.query(userUpdateQuery, [userElo, req.session.user.id]);
+    if ((resultUser as mysql.OkPacket).affectedRows === 0) {
+        console.log('Error updating user');
+        res.status(500).send('Error updating user');
+    }
+
+    totalElo /= req.body.questionResults.length;
+    const [ resultQuiz, fieldsQuiz ] = await connection.query(quizUpdateQuery, [totalElo, req.body.quizId]);
+    if ((resultQuiz as mysql.OkPacket).affectedRows === 0) {
+        console.log('Error updating quiz');
+        res.status(500).send('Error updating quiz');
+    }
+
+    res.status(200).send('Elo updated');
+
 }
 
 async function getQuiz( req: Request, res: Response ) : Promise<void> {
@@ -66,6 +129,7 @@ async function getQuiz( req: Request, res: Response ) : Promise<void> {
                     }
                 }
                 const responseObject = {
+                    'quizId': quizId,
                     'quizName': quizName,
                     'quizDescription': quizDescription,
                     'questions': quizQuestions

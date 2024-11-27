@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 
 import { initDB } from './init_db';
 import { login, signup, logout } from './userManager';
-import { getQuiz } from './quizServer';
+import { getQuiz, eloUpdate } from './quizServer';
 
 require('dotenv').config();
 
@@ -49,7 +49,9 @@ app.post('/signup', signup);
 
 app.post('/logout', logout);
 
-app.post('/get-quiz', getQuiz);
+app.get('/get-quiz', getQuiz);
+
+app.put('/elo-update', eloUpdate);
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
