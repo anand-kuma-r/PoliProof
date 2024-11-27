@@ -54,7 +54,7 @@ async function loadQuizzesFromFile(filename) {
 
     for (const quiz of quizzes) {
         // Parse each quiz by splitting by the defined sections
-        const lines = quiz.split('\n').map((line) => line.trim());
+        const lines = quiz.split('\n').map((line: string) => line.trim());
         const quizName = lines[0].split(':')[1].trim();
         const quizDescription = lines[1].split(':')[1].trim();
         const questions : Question[] = [];
