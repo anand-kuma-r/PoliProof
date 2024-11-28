@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 
 import { initDB } from './init_db';
 import { login, signup, logout } from './userManager';
-import { getQuiz, eloUpdate } from './quizServer';
+import { getQuiz, eloUpdate, getDynamicQuiz } from './quizServer';
 
 require('dotenv').config();
 
@@ -50,6 +50,8 @@ app.post('/signup', signup);
 app.post('/logout', logout);
 
 app.get('/get-quiz', getQuiz);
+
+app.get('/get-dynamic-quiz', getDynamicQuiz);
 
 app.put('/elo-update', eloUpdate);
 

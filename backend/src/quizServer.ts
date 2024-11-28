@@ -5,6 +5,7 @@ import mysql from 'mysql2/promise';
 
 const eloRange = 200;
 const elo_K = 20;
+const dynamicQuizDescription = 'A dynamic quiz has been generated for you! Test yourself on random topics to improve your knowledge!';
 
 function eloDiff (elo1: number, elo2: number, winner: number) : number[] {
     if (winner > 1) {
@@ -21,12 +22,7 @@ async function eloUpdate( req: Request, res: Response ) : Promise<void> {
         res.status(400).send('No user logged in');
         return;
     }
-    if (!req.body || !req.body.quizId){
-        console.log('No quiz id provided');
-        res.status(400).send('No quiz id provided');
-        return;
-    }
-    if (!req.body.questionResults || req.body.questionResults.length == 0){
+    if (!req.body || !req.body.questionResults || req.body.questionResults.length == 0){
         console.log('No question results provided');
         res.status(400).send('No question results provided');
         return;
@@ -71,14 +67,56 @@ async function eloUpdate( req: Request, res: Response ) : Promise<void> {
     }
 
     totalElo /= req.body.questionResults.length;
-    const [ resultQuiz, fieldsQuiz ] = await connection.query(quizUpdateQuery, [totalElo, req.body.quizId]);
-    if ((resultQuiz as mysql.OkPacket).affectedRows === 0) {
-        console.log('Error updating quiz');
-        res.status(500).send('Error updating quiz');
+    if (req.body && req.body.quizId && req.body.quizId != 0){ // Checking for dynamic quiz, no quiz update
+        const [ resultQuiz, fieldsQuiz ] = await connection.query(quizUpdateQuery, [totalElo, req.body.quizId]);
+        if ((resultQuiz as mysql.OkPacket).affectedRows === 0) {
+            console.log('Error updating quiz');
+            res.status(500).send('Error updating quiz');
+        }
     }
 
     res.status(200).send('Elo updated');
 
+}
+
+async function getDynamicQuiz( req: Request, res: Response ) : Promise<void> {
+    const connection = await connectDB();
+    if (!req.session || !req.session.user){
+        console.log('No user logged in');
+        res.status(400).send('No user logged in');
+    }
+    else {
+        if (!req.body || !req.body.questionCount){
+            console.log('No quiz count provided');
+            res.status(400).send('No quiz count provided');
+            return;
+        }
+        const questionCount = req.body.questionCount;
+        const userId = req.session.user.id;
+        const userLookupQuery = 'SELECT * FROM USER WHERE id = ?';
+        const [ rows, fields ] = await connection.query(userLookupQuery, [userId]);
+        if (!Array.isArray(rows) || rows.length === 0 ) {
+            res.status(401).send('User not found');
+            return;
+        }
+        const elo = (rows[0] as RowDataPacket).elo;
+        const questionQuery = 'SELECT * FROM QUESTION WHERE elo < ? AND elo > ? ORDER BY RAND() LIMIT ?';
+        const [ questions ] = await connection.query(questionQuery, [elo+eloRange, elo-eloRange, Number(questionCount)]);
+        if (!Array.isArray(questions) || questions.length < questionCount) {
+            res.status(404).send('Insufficient quizzes found');
+            return;
+        }
+        else {
+            const responseObject = {
+                'quizId': 0, // Indicating dynamic quiz
+                'quizName': '',
+                'quizDescription': dynamicQuizDescription,
+                'questions': questions
+            }
+            res.status(200).send(responseObject);
+            return;
+        }
+    }
 }
 
 async function getQuiz( req: Request, res: Response ) : Promise<void> {
@@ -141,4 +179,4 @@ async function getQuiz( req: Request, res: Response ) : Promise<void> {
     }
 }
 
-export { getQuiz, eloUpdate };
+export { getQuiz, eloUpdate, getDynamicQuiz };
