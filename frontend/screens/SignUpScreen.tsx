@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Alert } from 'react-native';
 import { TextInput, Button, Text, Title } from 'react-native-paper';
+import Constants from 'expo-constants';
 
 export default function SignUpScreen() {
   const [username, setUsername] = useState('');
@@ -10,7 +11,7 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     try {
-      const response = await fetch('https://aa67-71-35-24-99.ngrok-free.app/signup', {
+      const response = await fetch(`${Constants.expoConfig?.extra?.API_URL}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

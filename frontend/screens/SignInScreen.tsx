@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { View, Alert } from 'react-native';
 import { TextInput, Button, Text, Title } from 'react-native-paper';
 import { NavigationProp } from '@react-navigation/native';
+import Constants from 'expo-constants';
+
+
 
 export default function SignInScreen({ navigation }: { navigation: NavigationProp<any> }) {
   const [username, setUsername] = useState('');
@@ -9,7 +12,7 @@ export default function SignInScreen({ navigation }: { navigation: NavigationPro
 
   const handleSignIn = async () => {
     try {
-      const response = await fetch('https://aa67-71-35-24-99.ngrok-free.app/login', {
+      const response = await fetch(`${Constants.expoConfig?.extra?.API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
