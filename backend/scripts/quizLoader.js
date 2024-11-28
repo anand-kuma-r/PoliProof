@@ -73,7 +73,7 @@ var baseELO = 1000;
 // Function to load quizzes from file and insert into database
 function loadQuizzesFromFile(filename) {
     return __awaiter(this, void 0, void 0, function () {
-        var data, quizzes, _i, quizzes_1, quiz, lines, quizName, quizDescription, questions, currentQuestion, i, line, key, option, quizResult, quizId, error_1, _a, questions_1, question, checkResult, questionId, questionResult, error_2;
+        var data, quizzes, _i, quizzes_1, quiz, lines, quizName, quizDescription, tag, questions, currentQuestion, i, line, key, option, quizResult, quizId, error_1, _a, questions_1, question, checkResult, questionId, questionResult, error_2;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -88,10 +88,11 @@ function loadQuizzesFromFile(filename) {
                     lines = quiz.split('\n').map(function (line) { return line.trim(); });
                     quizName = lines[0].split(':')[1].trim();
                     quizDescription = lines[1].split(':')[1].trim();
+                    tag = lines[2].split(':')[1].trim();
                     questions = [];
                     currentQuestion = new Question('');
                     // Loop through each line and build questions
-                    for (i = 2; i < lines.length; i++) {
+                    for (i = 3; i < lines.length; i++) {
                         line = lines[i];
                         if (line.startsWith('QUESTION:')) {
                             currentQuestion = new Question(line.split(':')[1].trim());
@@ -123,7 +124,7 @@ function loadQuizzesFromFile(filename) {
                     _b.label = 3;
                 case 3:
                     _b.trys.push([3, 5, , 6]);
-                    return [4 /*yield*/, connection.promise().execute('INSERT INTO QUIZ (name, description, totalElo) VALUES (?, ?, ?)', [quizName, quizDescription, baseELO])];
+                    return [4 /*yield*/, connection.promise().execute('INSERT INTO QUIZ (name, description, tag, totalElo) VALUES (?, ?, ?, ?)', [quizName, quizDescription, tag, baseELO])];
                 case 4:
                     quizResult = (_b.sent())[0];
                     console.log(quizResult.insertId);

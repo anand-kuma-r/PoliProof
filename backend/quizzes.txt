@@ -1,5 +1,6 @@
 NAME: Name the President
 DESCRIPTION: Identify the president who was in office during the year stated, based off the provided clues
+TAG: US History
 QUESTION: Which president was in office in 1790, and can be found in our wallets too?
 OPTION A: Abraham Lincoln
 OPTION B: George Washington
@@ -21,6 +22,7 @@ CORRECT ANSWER: D
 
 NAME: All About the Constitution
 DESCRIPTION: See how well you really know the US Constitution!
+TAG: US History
 QUESTION: How many amendments have been written into law?
 OPTION A: 22
 OPTION B: 34
