@@ -57,11 +57,12 @@ async function loadQuizzesFromFile(filename) {
         const lines = quiz.split('\n').map((line: string) => line.trim());
         const quizName = lines[0].split(':')[1].trim();
         const quizDescription = lines[1].split(':')[1].trim();
+        const tag = lines[2].split(':')[1].trim();
         const questions : Question[] = [];
         let currentQuestion = new Question('');
 
         // Loop through each line and build questions
-        for (let i = 2; i < lines.length; i++) {
+        for (let i = 3; i < lines.length; i++) {
             const line = lines[i];
             
             if (line.startsWith('QUESTION:')) {
@@ -94,8 +95,8 @@ async function loadQuizzesFromFile(filename) {
         let quizId = 0;
         try {
             [ quizResult ] = await connection.promise().execute(
-                'INSERT INTO QUIZ (name, description, totalElo) VALUES (?, ?, ?)',
-                [quizName, quizDescription, baseELO]
+                'INSERT INTO QUIZ (name, description, tag, totalElo) VALUES (?, ?, ?, ?)',
+                [quizName, quizDescription, tag, baseELO]
             );
             console.log(quizResult.insertId)
             quizId = quizResult.insertId;

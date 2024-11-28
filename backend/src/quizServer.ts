@@ -87,8 +87,8 @@ async function getDynamicQuiz( req: Request, res: Response ) : Promise<void> {
     }
     else {
         if (!req.body || !req.body.questionCount){
-            console.log('No quiz count provided');
-            res.status(400).send('No quiz count provided');
+            console.log('No question count provided');
+            res.status(400).send('No question count provided');
             return;
         }
         const questionCount = req.body.questionCount;
@@ -113,12 +113,55 @@ async function getDynamicQuiz( req: Request, res: Response ) : Promise<void> {
                 'quizDescription': dynamicQuizDescription,
                 'questions': questions
             }
-            res.status(200).send(responseObject);
+            res.status(200).send({ "0": responseObject } );
             return;
         }
     }
 }
 
+async function processQuiz ( quiz: RowDataPacket, connection: mysql.Connection ) : Promise<[Record<string, unknown>, Number]> {
+    const quizId = quiz.id;
+    const quizName = quiz.name;
+    const quizDescription = quiz.description;
+    const quizTag = quiz.tag;
+    const [ matches ] = await connection.query('SELECT * FROM QUIZ_QUESTIONS WHERE QuizID = ?', [quizId]);
+    if (!Array.isArray(matches) || matches.length === 0) {
+        return [{}, 0];
+    }
+
+    let quizQuestions = [];
+    for (const match of matches) {
+        try {
+            const [ question ] = await connection.query('SELECT * FROM QUESTION WHERE id = ?', [(match as RowDataPacket).QuestionID]);
+            if (!Array.isArray(question) || question.length === 0) {
+                continue;
+            }
+            quizQuestions.push( question[0] as RowDataPacket );
+        }
+        catch (error) {
+            console.log(error);
+            return [{}, 0];
+        }
+    }
+    const responseObject = {
+        'quizId': quizId,
+        'quizName': quizName,
+        'quizDescription': quizDescription,
+        'quizTag': quizTag,
+        'questions': quizQuestions
+    }
+    return [responseObject, quizId];
+}
+
+/**
+ * Given a user, send a quiz with a random set of questions.
+ * If req.body.tag is present, send a quiz with that tag.
+ * If req.body.quizCount is present, send that many quizzes.
+ * Request must contain a valid user session.
+ * 
+ * @param req Express request object
+ * @param res Express response object
+ */
 async function getQuiz( req: Request, res: Response ) : Promise<void> {
     const connection = await connectDB();
     if (!req.session || !req.session.user){
@@ -135,44 +178,28 @@ async function getQuiz( req: Request, res: Response ) : Promise<void> {
         }
         else {
             const elo = rows[0].elo;
-            const quizQuery = 'SELECT * FROM QUIZ WHERE totalElo < ? AND totalElo > ? ORDER BY RAND() LIMIT 1';
-            const [ quiz ] = await connection.query(quizQuery, [elo+eloRange, elo-eloRange]);
-            if (!Array.isArray(quiz) || quiz.length === 0) {
+            const quizQuery = 'SELECT * FROM QUIZ WHERE totalElo < ? AND totalElo > ? ORDER BY RAND() LIMIT ?';
+            const quizTagQuery = 'SELECT * FROM QUIZ WHERE totalElo < ? AND totalElo > ? AND tag = ? ORDER BY RAND() LIMIT ?';
+            let quizzes;
+            if (req.body && req.body.tag) {
+                [ quizzes ] = await connection.query(quizTagQuery, [elo+eloRange, elo-eloRange, req.body.tag, (req.body && req.body.quizCount) ? req.body.quizCount : 1]);
+            }
+            else {
+                [ quizzes ] = await connection.query(quizQuery, [elo+eloRange, elo-eloRange, (req.body && req.body.quizCount) ? req.body.quizCount : 1]);
+            }
+            if (!Array.isArray(quizzes) || quizzes.length === 0) {
                 res.status(404).send('No quizzes found');
                 return;
             }
             else {
-                const quizId = (quiz[0] as RowDataPacket ).id;
-                const quizName = (quiz[0] as RowDataPacket ).name;
-                const quizDescription = (quiz[0] as RowDataPacket ).description;
-                const [ matches ] = await connection.query('SELECT * FROM QUIZ_QUESTIONS WHERE QuizID = ?', [quizId]);
-                if (!Array.isArray(matches) || matches.length === 0) {
-                    res.status(404).send('No questions found');
-                    return;
-                }
-
-                let quizQuestions = [];
-                for (const match of matches) {
-                    try {
-                        const [ question ] = await connection.query('SELECT * FROM QUESTION WHERE id = ?', [(match as RowDataPacket).QuestionID]);
-                        if (!Array.isArray(question) || question.length === 0) {
-                            res.status(404).send('Missing Question');
-                            continue;
-                        }
-                        quizQuestions.push( question[0] as RowDataPacket );
-                    }
-                    catch (error) {
-                        console.log(error);
-                        res.status(404).send('Missing Question');
+                let response : Record<string, any> = {};
+                for ( const quiz of quizzes) {
+                    const [ responseObject, quizId ] = await processQuiz(quiz as RowDataPacket, connection);
+                    if (quizId !== 0) {
+                        response[ String(quizId) ] = responseObject;
                     }
                 }
-                const responseObject = {
-                    'quizId': quizId,
-                    'quizName': quizName,
-                    'quizDescription': quizDescription,
-                    'questions': quizQuestions
-                }
-                res.status(200).send(responseObject);
+                res.status(200).send(response);
                 return;
             }
         }
