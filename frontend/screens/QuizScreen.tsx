@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Title, Text, Button, TouchableRipple } from 'react-native-paper';
 import Constants from 'expo-constants';
+import { useRoute, RouteProp } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -21,19 +22,24 @@ interface Quiz {
   questions: Question[];
 }
 
+type QuizScreenParams = {
+  quizId: number;
+};
+
+type QuizScreenRouteProp = RouteProp<{ Quiz: QuizScreenParams }, 'Quiz'>;
+
 export default function QuizScreen({ navigation }: { navigation: any }) {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [progress, setProgress] = useState(new Animated.Value(0));
+  const route = useRoute<QuizScreenRouteProp>();
+  const { quizId } = route.params;
 
   useEffect(() => {
-    const fetchQuiz = async (quizID = 3) => {
+    const fetchQuiz = async (quizID = quizId) => {
       try {
-        const url = quizID
-          ? `${Constants.expoConfig?.extra?.API_URL}/get-quiz?quizID=${quizID}`
-          : `${Constants.expoConfig?.extra?.API_URL}/get-quiz`;
-
+        const url = `${Constants.expoConfig?.extra?.API_URL}/get-quiz?quizID=${quizID}`
         const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();

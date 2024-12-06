@@ -22,7 +22,7 @@ export default function SignInScreen({ navigation }: { navigation: NavigationPro
 
       if (response.ok) {
         Alert.alert('Success', 'User logged in successfully');
-        navigation.navigate('Quiz'); // Quiz is temporary. we need to test out the UI
+        navigation.navigate('Home'); // Quiz is temporary. we need to test out the UI
 
       } else {
         const errorText = await response.text();
