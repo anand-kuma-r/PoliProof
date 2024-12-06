@@ -162,48 +162,90 @@ async function processQuiz ( quiz: RowDataPacket, connection: mysql.Connection )
  * @param req Express request object
  * @param res Express response object
  */
-async function getQuiz( req: Request, res: Response ) : Promise<void> {
+async function getQuiz(req: Request, res: Response): Promise<void> {
     const connection = await connectDB();
-    if (!req.session || !req.session.user){
-        console.log('No user logged in');
-        res.status(400).send('No user logged in');
-    }
-    else {
-        const userId = req.session.user.id;
-        const userLookupQuery = 'SELECT * FROM USER WHERE id = ?';
-        const [ rows, fields ] = await connection.query(userLookupQuery, [userId]);
-        if (!Array.isArray(rows) || rows.length === 0 || !('password' in rows[0]) ) {
-            res.status(401).send('User not found');
+
+    // Check if the user is logged in (uncomment if session management is required)
+    // if (!req.session || !req.session.user) {
+    //     console.log('No user logged in');
+    //     res.status(400).send('No user logged in');
+    //     return;
+    // }
+
+    const quizID = req.query.quizID ? parseInt(req.query.quizID as string, 10) : null;
+
+    try {
+        let quizResults: RowDataPacket[] = [];
+
+        if (quizID) {
+            // Fetch the quiz by ID
+            const [quizResultsArray] = await connection.query<RowDataPacket[]>('SELECT * FROM QUIZ WHERE id = ?', [quizID]);
+            quizResults = quizResultsArray;
+        } else {
+            // Fetch a random quiz if quizID is not provided
+            const [quizResultsArray] = await connection.query<RowDataPacket[]>('SELECT * FROM QUIZ ORDER BY RAND() LIMIT 1');
+            quizResults = quizResultsArray;
+        }
+
+        if (!Array.isArray(quizResults) || quizResults.length === 0) {
+            res.status(404).send('Quiz not found');
             return;
         }
-        else {
-            const elo = rows[0].elo;
-            const quizQuery = 'SELECT * FROM QUIZ WHERE totalElo < ? AND totalElo > ? ORDER BY RAND() LIMIT ?';
-            const quizTagQuery = 'SELECT * FROM QUIZ WHERE totalElo < ? AND totalElo > ? AND tag = ? ORDER BY RAND() LIMIT ?';
-            let quizzes;
-            if (req.body && req.body.tag) {
-                [ quizzes ] = await connection.query(quizTagQuery, [elo+eloRange, elo-eloRange, req.body.tag, (req.body && req.body.quizCount) ? req.body.quizCount : 1]);
-            }
-            else {
-                [ quizzes ] = await connection.query(quizQuery, [elo+eloRange, elo-eloRange, (req.body && req.body.quizCount) ? req.body.quizCount : 1]);
-            }
-            if (!Array.isArray(quizzes) || quizzes.length === 0) {
-                res.status(404).send('No quizzes found');
-                return;
-            }
-            else {
-                let response : Record<string, any> = {};
-                for ( const quiz of quizzes) {
-                    const [ responseObject, quizId ] = await processQuiz(quiz as RowDataPacket, connection);
-                    if (quizId !== 0) {
-                        response[ String(quizId) ] = responseObject;
-                    }
-                }
-                res.status(200).send(response);
-                return;
-            }
+
+        const quiz = quizResults[0];
+
+        // Process the quiz using `processQuiz`
+        const [responseObject, quizId] = await processQuiz(quiz as RowDataPacket, connection);
+
+        if (quizId !== 0) {
+            // Structure response as requested
+            const response: Record<string, unknown> = {};
+            response[String(quizId)] = responseObject;
+            res.status(200).send(response);
+            return;
+        } else {
+            res.status(404).send('No questions found for the quiz');
+        }
+    } catch (error) {
+        console.error('Error retrieving quiz:', error);
+        res.status(500).send('An error occurred while retrieving the quiz');
+    } finally {
+        if (connection) {
+            connection.end();
         }
     }
 }
 
-export { getQuiz, eloUpdate, getDynamicQuiz };
+
+
+
+async function getAllQuizzes(req: Request, res: Response) {
+    const connection = await connectDB();
+
+    try {
+        const query = `
+            SELECT id AS quizId, name AS quizName, description AS quizDescription, 
+                   tag AS quizTag, img AS imgUrl, totalElo
+            FROM QUIZ;
+        `;
+        const [quizzes] = await connection.query(query);
+
+        if (!Array.isArray(quizzes) || quizzes.length === 0) {
+            res.status(404).send('No quizzes found');
+            return;
+        }
+
+        res.status(200).send(quizzes);
+    } catch (error) {
+        console.error('Error retrieving quizzes:', error);
+        res.status(500).send('An error occurred while retrieving quizzes');
+    } finally {
+        if (connection) {
+            connection.end();
+        }
+    }
+}
+
+
+
+export { getQuiz, eloUpdate, getDynamicQuiz ,getAllQuizzes};

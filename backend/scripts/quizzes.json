@@ -1,0 +1,77 @@
+[
+    {
+      "quiz": {
+        "name": "Name the President",
+        "description": "Identify the president who was in office during the year stated, based off the provided clues",
+        "tag": "US History",
+        "img_url": "https://postimg.cc/hzTK0WCZ",
+        "questions": [
+          {
+            "question": "Which president was in office in 1790, and can be found in our wallets too?",
+            "optionA": "Abraham Lincoln",
+            "optionB": "George Washington",
+            "optionC": "Barack Obama",
+            "optionD": "Theodore Roosevelt",
+            "correctAnswer": 2,
+            "elo": 1000
+          },
+          {
+            "question": "Which president was in office in 1841, but only for a record short 32 days?",
+            "optionA": "William Henry Harrison",
+            "optionB": "Bill Clinton",
+            "optionC": "William Taft",
+            "optionD": "Andrew Jackson",
+            "correctAnswer": 1,
+            "elo": 1200
+          },
+          {
+            "question": "Donald Trump follows which only other president to serve non-consecutive terms, in office in 1886 as well as 1895?",
+            "optionA": "Franklin Pierce",
+            "optionB": "James A. Garfield",
+            "optionC": "Ulysses S. Grant",
+            "optionD": "Grover Cleveland",
+            "correctAnswer": 4,
+            "elo": 1500
+          }
+        ]
+      }
+    },
+    {
+      "quiz": {
+        "name": "All About the Constitution",
+        "description": "See how well you really know the US Constitution!",
+        "tag": "US History",
+        "img_url": "https://postimg.cc/QBjgDh71",
+        "questions": [
+          {
+            "question": "How many amendments have been written into law?",
+            "optionA": "22",
+            "optionB": "34",
+            "optionC": "27",
+            "optionD": "14",
+            "correctAnswer": 3,
+            "elo": 1000
+          },
+          {
+            "question": "The US Constitution is the oldest and shortest written Constitution of any major government! Around how many words was the original document?",
+            "optionA": "4550",
+            "optionB": "2430",
+            "optionC": "13400",
+            "optionD": "9560",
+            "correctAnswer": 1,
+            "elo": 1100
+          },
+          {
+            "question": "Not every founding father took part in signing the Constitution! Which of the following people did NOT sign the Constitution?",
+            "optionA": "Alexander Hamilton",
+            "optionB": "Roger Sherman",
+            "optionC": "Benjamin Franklin",
+            "optionD": "Thomas Jefferson",
+            "correctAnswer": 4,
+            "elo": 1300
+          }
+        ]
+      }
+    }
+  ]
+  

@@ -28,12 +28,25 @@ export default function QuizScreen({ navigation }: { navigation: any }) {
   const [progress, setProgress] = useState(new Animated.Value(0));
 
   useEffect(() => {
-    const fetchQuiz = async () => {
+    const fetchQuiz = async (quizID = 3) => {
       try {
-        const response = await fetch(`${Constants.expoConfig?.extra?.API_URL}/get-quiz`);
+        const url = quizID
+          ? `${Constants.expoConfig?.extra?.API_URL}/get-quiz?quizID=${quizID}`
+          : `${Constants.expoConfig?.extra?.API_URL}/get-quiz`;
+
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
-          setQuiz(data);
+
+          // Extract quiz object from the response format
+          const quizId = Object.keys(data)[0]; // Extract the first quizId
+          const quizObject = data[quizId]; // Access the corresponding quiz object
+
+          if (quizObject) {
+            setQuiz(quizObject);
+          } else {
+            console.error('No quiz found in response');
+          }
         } else {
           console.error('Failed to fetch quiz');
         }
@@ -47,19 +60,28 @@ export default function QuizScreen({ navigation }: { navigation: any }) {
 
   const handleAnswerSelection = (answer: string) => {
     setSelectedAnswer(answer);
-    setTimeout(() => {
-      if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
+
+    if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
+      setTimeout(() => {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         setSelectedAnswer(null);
         Animated.timing(progress, {
           toValue: (currentQuestionIndex + 1) / (quiz?.questions.length || 1),
-          duration: 300,
+          duration: 200,
           useNativeDriver: false,
         }).start();
-      } else {
+      }, 1000); // Simulate delay for feedback
+    } else {
+      // Update progress bar for the final question
+      Animated.timing(progress, {
+        toValue: 0.91, // Fully completed
+        duration: 200,
+        useNativeDriver: false,
+      }).start(() => {
+        // Navigate to results after animation completes
         navigation.navigate('Results');
-      }
-    }, 1000); // Simulate delay for feedback
+      });
+    }
   };
 
   if (!quiz) {

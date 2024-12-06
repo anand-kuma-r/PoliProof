@@ -4,20 +4,20 @@ import bodyParser from 'body-parser';
 
 import { initDB } from './init_db';
 import { login, signup, logout } from './userManager';
-import { getQuiz, eloUpdate, getDynamicQuiz } from './quizServer';
+import { getQuiz, eloUpdate, getDynamicQuiz, getAllQuizzes } from './quizServer';
 
 require('dotenv').config();
 
 const greet = (name: string): string => {
     return `'Ello, ${name}!`
-}
+};
 
-console.log(greet("Bruv"))
+console.log(greet("Bruv"));
 
 initDB();
 
 // Route handlers
-const app = express()
+const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -28,22 +28,23 @@ if (!process.env.LOGIN_KEY) {
 
 app.use(
     session({
-      secret: process.env.LOGIN_KEY,
-      resave: false,
-      saveUninitialized: true,
-      cookie: { secure: false },
+        secret: process.env.LOGIN_KEY,
+        resave: false,
+        saveUninitialized: true,
+        cookie: { secure: false },
     })
-  );
+);
 
-
-const port = 3000
+const port = 3000;
 
 app.all('/', (req: Request, res: Response) => {
-    res.send('Hello World!')
-})
+    res.send('Hello World!');
+});
 
 // Login route to authenticate user
 app.post('/login', login);
+
+app.all('/iii', (req: Request, res: Response) => {res.send('CHECKEMEMEME');});
 
 app.post('/signup', signup);
 
@@ -52,6 +53,8 @@ app.post('/logout', logout);
 app.get('/get-quiz', getQuiz);
 
 app.get('/get-dynamic-quiz', getDynamicQuiz);
+
+app.get('/get-all-quizzes', getAllQuizzes);
 
 app.put('/elo-update', eloUpdate);
 
