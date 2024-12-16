@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Request, Response } from 'express';
 
 const tokenConnectionMap = new Map<string, WebSocket>(); 
+const connectionTokenMap = new Map<WebSocket, string>();
 const tokenConnections = new TwoWayMap<string>();
 const connectionMap = new TwoWayMap<WebSocket>();
 
@@ -19,6 +20,17 @@ const connectionMap = new TwoWayMap<WebSocket>();
  *
 */
 
+/*
+ * Current implemented flow:
+ * 1. Client A and Client B must first send "/joinMatchmaking" POST request to join queue
+ * 2. Client A and Client B must then send "/getToken" GET request to receive tokens, should be sent around every 1 second to stay valid
+ * 3. Once Clients A and B receive a token, they then send a "/leaveMatchmaking" DELETE request to leave queue
+ * 4. Once Clients A and B receive a token, they then initiate a websocket request with the token as a url parameter
+ * 5. If it is a valid token, the server will either send a status "CONNECTION VALID" or "CONNECTION WAITING". If in connection waiting, 
+ *    wait for the other client to join (when status "CONNECTION VALID" sent)
+ * 6. Once one end tears down, close connections on one end or trigger endpoint for endGame to tear it down
+*/
+
 // Once both ends of the token connection are established, we can initiate the connection on the connectionMap
 function initiateConnection(token1 : string, token2 : string) : boolean {
     try {
@@ -29,6 +41,8 @@ function initiateConnection(token1 : string, token2 : string) : boolean {
             return false;
         }
         connectionMap.set(ws1, ws2);
+        ws1.send(JSON.stringify({ status: "CONNECTION VALID" }));
+        ws2.send(JSON.stringify({ status: "CONNECTION VALID" }));
         return true;
     } catch (error) {
         const ws1 = tokenConnectionMap.get(token1);
@@ -66,20 +80,11 @@ function generateGame() : [ string, string ] {
     }
 }
 
-
-/**
- * Ends a game associated with a token, and closes the connections associated with the game.
- * 
- * @param token The token associated with the game to end
- * @returns A boolean indicating whether the game was successfully ended
- */
-async function endGame(req : Request, res : Response){
-    const { token } = req.body;
+async function tearDown(token : string) {
     const mySocket = tokenConnectionMap.get(token);
     if (!mySocket) {
         console.error('Token is not connected to user');
-        res.status(400).send('Token is not connected to user');
-        return;
+        return false;
     }
 
     // First, get the paired token for the game
@@ -88,6 +93,7 @@ async function endGame(req : Request, res : Response){
         mySocket.close();
     });
     tokenConnectionMap.delete(token);
+    connectionTokenMap.delete(mySocket);
 
 
     // If there is an associated game, end the connections associated with the game
@@ -106,21 +112,54 @@ async function endGame(req : Request, res : Response){
 
     tokenConnections.remove(token);
     connectionMap.remove(mySocket);
+    return true;
+}
 
-    res.status(200).send('Game ended');
-    return;
+/**
+ * Ends a game associated with a token, and closes the connections associated with the game.
+ * 
+ * @param token The token associated with the game to end
+ * @returns A boolean indicating whether the game was successfully ended
+ */
+async function endGame(req : Request, res : Response){
+    const { token } = req.body;
+    const result = await tearDown(token);
+    if (result) {
+        res.status(200).send('Game ended');
+    } else {
+        res.status(400).send('Token not connected to user');
+    }
     
 }
 
-const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) => {
+const handleWebSocketConnection = (ws : WebSocket, req : Request) => {
     console.log('New WebSocket connection');
+
+    if (!req){
+        console.error('Request not found');
+        ws.send(JSON.stringify({ error: "Request not found. Connection will be closed." }), () => {
+            ws.close();
+        });
+        return;
+    }
+
+    if (!req.url) {
+        console.error('URL not found in request');
+        ws.send(JSON.stringify({ error: "URL not found in request. Connection will be closed." }), () => {
+            ws.close();
+        });
+        return;
+    }
 
     const urlParams = new URLSearchParams(req.url.split('?')[1]);
     const token = urlParams.get('token');
 
     if (!token) {
-    console.error('Token not found in URL parameters');
-    return;
+        console.error('Token not found in URL parameters');
+        ws.send(JSON.stringify({ error: "Token not found in URL parameters. Connection will be closed." }), () => {
+            ws.close();
+        });
+        return;
     }
 
     // Check if this token is associated with a game
@@ -135,12 +174,14 @@ const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) 
     // Check if token is already connected to a client. If not, add it to the map.
     if (!tokenConnectionMap.has(token)) {
         tokenConnectionMap.set(token, ws);
+        connectionTokenMap.set(ws, token);
 
         // Get token pair and check if that token has been cashed in by a client.
         const pairToken = tokenConnections.get(token);
         if (!pairToken) {
             console.error('Token pair not found');
             tokenConnectionMap.delete(token);
+            connectionTokenMap.delete(ws);
             ws.send(JSON.stringify({ error: "Token pair not found. Connection will be closed." }), () => {
                 ws.close();
             });
@@ -151,13 +192,13 @@ const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) 
         if (tokenConnectionMap.has(pairToken)) {
             console.log('Both users now connected');
             if (!initiateConnection(token, pairToken)) {
-                ws.send(JSON.stringify({ error: "Failed to initiate connection. Try again." }));
+                ws.send(JSON.stringify({ error: "Failed to initiate connection." }));
                 return;
             }
-            ws.send(JSON.stringify({ message: "Both users now connected" }));
+            // ws.send(JSON.stringify({ message: "Both users now connected" }));
         }
         else {
-            ws.send(JSON.stringify({ message: "Waiting for other user to connect" }));
+            ws.send(JSON.stringify({ status: "CONNECTION WAITING" }));
         }
 
     }
@@ -176,18 +217,35 @@ const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) 
 
   ws.on('message', (message : Data) => {
 
-    console.log('Received:', message);
-    if (typeof message === 'string') {
-        message = JSON.parse(message);
+    const messageString = message instanceof Buffer 
+    ? message.toString('utf-8') 
+    : message;
+
+    console.log('Received:', messageString);
+
+    if (typeof messageString === 'string') {
+        try {
+            message = JSON.parse(messageString);
+        }
+        catch (error) {
+            console.error('Failed to parse message as JSON');
+            ws.send(JSON.stringify({ error: "Failed to parse message as JSON. Connection will be closed." }), () => {
+                ws.close();
+            });
+            return;
+        }
     }
     else {
         console.error('Message is not a string');
+        ws.send(JSON.stringify({ error: "Message is not a string. Connection will be closed." }), () => {
+            ws.close();
+        });
         return;
     }
 
     const pairClient = connectionMap.get(ws);
     if (pairClient) {
-        pairClient.send(message);
+        pairClient.send(messageString);
     }
     else {
         console.log('No pair client found');
@@ -205,9 +263,14 @@ const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) 
     if (pairClient) {
         pairClient.send(JSON.stringify({ message: "WebSocket connection closed from other end" }));
     }
-    tokenConnectionMap.delete(token);
-    tokenConnections.remove(token);
-    connectionMap.remove(ws);
+    const token = connectionTokenMap.get(ws);
+    if (token){
+        console.log('Tearing down game for token ' + token);
+        tearDown(token);
+    }
+    else {
+        console.log('No token found');
+    }
   });
 
 };
