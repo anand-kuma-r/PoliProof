@@ -26,21 +26,20 @@ async function streakUpdate( username: string ) : Promise<boolean> {
         const [ rows ] = await connection.query(checkQuery, [username]);
 
         if (Array.isArray(rows) && rows.length > 0) {
-            const { STREAK, STREAKDATE } = rows[0] as RowDataPacket;
+            const { streak, streakDate } = rows[0] as RowDataPacket;
             const today = new Date();
             const dateString = today.toISOString().split('T')[0];
 
-            if (STREAKDATE === dateString) {
+            if (streakDate === dateString) {
                 return true;
             }
 
-            if (STREAKDATE === getLastDate(dateString)) {
+            if (streakDate === getLastDate(dateString)) {
                 const updateStreakQuery = 'UPDATE USER SET STREAK = ?, STREAKDATE = ? WHERE username = ?';
-                await connection.query(updateStreakQuery, [STREAK + 1, dateString, username]);
+                await connection.query(updateStreakQuery, [streak + 1, dateString, username]);
                 return true;
             }
 
-            // If we haven't logged in yesterday
             const updateStreakQuery = 'UPDATE USER SET STREAK = ?, STREAKDATE = ? WHERE username = ?';
             await connection.query(updateStreakQuery, [1, dateString, username]);
             return true;
