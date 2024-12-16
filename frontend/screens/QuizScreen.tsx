@@ -13,6 +13,7 @@ interface Question {
   optionB: string;
   optionC: string;
   optionD: string;
+  correctAnswer: number;
 }
 
 interface Quiz {
@@ -33,6 +34,7 @@ export default function QuizScreen({ navigation }: { navigation: any }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [progress, setProgress] = useState(new Animated.Value(0));
+  const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const route = useRoute<QuizScreenRouteProp>();
   const { quizId } = route.params;
 
@@ -66,29 +68,52 @@ export default function QuizScreen({ navigation }: { navigation: any }) {
 
   const handleAnswerSelection = (answer: string) => {
     setSelectedAnswer(answer);
+    const answerIndex = ['A', 'B', 'C', 'D'].indexOf(answer);
 
+    setUserAnswers((prevAnswers) => {
+        const newAnswers = [...prevAnswers];
+        newAnswers[currentQuestionIndex] = answerIndex; // Update user's answer for the current question
+        return newAnswers;
+    });
+
+    // Handle next question or finish quiz
     if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
-      setTimeout(() => {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setSelectedAnswer(null);
-        Animated.timing(progress, {
-          toValue: (currentQuestionIndex + 1) / (quiz?.questions.length || 1),
-          duration: 200,
-          useNativeDriver: false,
-        }).start();
-      }, 1000); // Simulate delay for feedback
+        setTimeout(() => {
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
+            setSelectedAnswer(null);
+            Animated.timing(progress, {
+                toValue: (currentQuestionIndex + 1) / (quiz?.questions.length || 1),
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        }, 1000); // Simulate delay for feedback
     } else {
-      // Update progress bar for the final question
-      Animated.timing(progress, {
-        toValue: 0.91, // Fully completed
-        duration: 200,
-        useNativeDriver: false,
-      }).start(() => {
-        // Navigate to results after animation completes
-        navigation.navigate('Results');
-      });
+        // Update progress for the final question and navigate to results
+        setTimeout(() => {
+            Animated.timing(progress, {
+                toValue: 1, // Fully completed
+                duration: 200,
+                useNativeDriver: false,
+            }).start(() => {
+                if (quiz) {
+                    const correctAnswers = quiz.questions.map((q) => q.correctAnswer);
+                    let score = userAnswers.reduce((acc, answer, index) => {
+                        return acc + (answer === (correctAnswers[index] - 1) ? 1 : 0); // Adjust index
+                    }, 0);
+
+                    // Add the last question's score (if not already included)
+                    const lastAnswer = answerIndex;
+                    if (lastAnswer === (correctAnswers[currentQuestionIndex] - 1)) {
+                        score += 1;
+                    }
+
+                    navigation.navigate('Results', { score, totalQuestions: quiz.questions.length });
+                }
+            });
+        }, 1000);
     }
-  };
+};
+
 
   if (!quiz) {
     return (
