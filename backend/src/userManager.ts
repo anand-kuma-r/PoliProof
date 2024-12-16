@@ -30,12 +30,10 @@ async function streakUpdate( username: string ) : Promise<boolean> {
             const today = new Date();
             const dateString = today.toISOString().split('T')[0];
 
-            // If we already logged in no need to update
             if (STREAKDATE === dateString) {
                 return true;
             }
 
-            // If we are adding to our streak for logging in today
             if (STREAKDATE === getLastDate(dateString)) {
                 const updateStreakQuery = 'UPDATE USER SET STREAK = ?, STREAKDATE = ? WHERE username = ?';
                 await connection.query(updateStreakQuery, [STREAK + 1, dateString, username]);
@@ -200,4 +198,23 @@ async function logout( req: Request, res: Response ) : Promise<void> {
     }
 }
 
-export { login, signup, logout };
+async function getStreak( req: Request, res: Response ) : Promise<void> {
+    if (req.session && req.session.user) {
+        res.status(200).send(req.session.user.streak);
+        const checkQuery = 'SELECT STREAK FROM USER WHERE username = ?';
+        const connection = await connectDB();
+        const [ rows ] = await connection.query(checkQuery, [req.session.user.username]);
+        if (Array.isArray(rows) && rows.length > 0) {
+            req.session.user.streak = (rows[0] as RowDataPacket).streak;
+        }
+        await connection.end();
+        res.status(200).send(req.session.user.streak);
+        return;
+    } else {
+        console.log('No user logged in');
+        res.status(400).send('No user logged in');
+        return;
+    }
+}
+
+export { login, signup, logout, getStreak };

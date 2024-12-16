@@ -6,8 +6,9 @@ import { createServer} from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
 
 import { initDB } from './init_db';
-import { login, signup, logout } from './userManager';
+import { login, signup, logout, getStreak } from './userManager';
 import { getQuiz, eloUpdate, getDynamicQuiz, getAllQuizzes, getUserInfo } from './quizServer';
+
 import { handleWebSocketConnection, endGame } from './webRTC';
 import { MatchmakingManager } from './matchmakingManager';
 
@@ -49,6 +50,8 @@ app.all('/', (req: Request, res: Response) => {
 
 // Login route to authenticate user
 app.post('/login', login);
+
+app.get('/streak', getStreak);
 
 app.all('/iii', (req: Request, res: Response) => {res.send('CHECKEMEMEME');});
 
