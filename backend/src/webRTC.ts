@@ -224,10 +224,22 @@ const handleWebSocketConnection = (ws : WebSocket, req : Request) => {
     console.log('Received:', messageString);
 
     if (typeof messageString === 'string') {
-        message = JSON.parse(messageString);
+        try {
+            message = JSON.parse(messageString);
+        }
+        catch (error) {
+            console.error('Failed to parse message as JSON');
+            ws.send(JSON.stringify({ error: "Failed to parse message as JSON. Connection will be closed." }), () => {
+                ws.close();
+            });
+            return;
+        }
     }
     else {
         console.error('Message is not a string');
+        ws.send(JSON.stringify({ error: "Message is not a string. Connection will be closed." }), () => {
+            ws.close();
+        });
         return;
     }
 
