@@ -7,7 +7,7 @@ import { WebSocket } from 'ws';
 
 import { initDB } from './init_db';
 import { login, signup, logout } from './userManager';
-import { getQuiz, eloUpdate, getDynamicQuiz, getAllQuizzes } from './quizServer';
+import { getQuiz, eloUpdate, getDynamicQuiz, getAllQuizzes, getUserInfo } from './quizServer';
 import { handleWebSocketConnection, endGame } from './webRTC';
 import { MatchmakingManager } from './matchmakingManager';
 
@@ -63,6 +63,8 @@ app.get('/get-dynamic-quiz', getDynamicQuiz);
 app.get('/get-all-quizzes', getAllQuizzes);
 
 app.put('/elo-update', eloUpdate);
+
+app.get('/get-user-info', getUserInfo);
 
 app.delete('/end-game', endGame);
 

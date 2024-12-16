@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, Alert, FlatList, TouchableOpacity } from 'react-native';
-import Constants from 'expo-constants';
+import { View, Text, StyleSheet, Button, Alert, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
+import Constants from 'expo-constants';
 
 interface Tag {
   id: string;
@@ -17,44 +17,20 @@ const tags: Tag[] = [
 ];
 
 const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) => {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [status, setStatus] = useState('Select topics for your live quiz.');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [status, setStatus] = useState('Select topics for your live quiz.');
   const [isMatchmaking, setIsMatchmaking] = useState(false);
+  const [username, setUsername] = useState('TestUser123'); // Replace this dynamically in your app
+  const [token, setToken] = useState<string | null>(null);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    // Establish WebSocket connection
-    const newSocket = new WebSocket('ws://localhost:3000');
-
-    newSocket.onopen = () => {
-      console.log('WebSocket connection established');
-    };
-
-    newSocket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'match_found') {
-        setStatus('Match found! Starting quiz...');
-        navigation.navigate('Quiz', { matchId: message.matchId });
-      }
-    };
-
-    newSocket.onclose = () => {
-      console.log('WebSocket connection closed');
-      setStatus('Connection closed. Please try again.');
-    };
-
-    newSocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setStatus('An error occurred. Please try again.');
-    };
-
-    setSocket(newSocket);
-
-    // Cleanup on unmount
+    // Cleanup when component unmounts
     return () => {
-      newSocket.close();
+      handleLeaveMatchmaking();
+      socket?.close();
     };
-  }, [navigation]);
+  }, []);
 
   const toggleTagSelection = (tagId: string) => {
     setSelectedTags((prev) =>
@@ -62,19 +38,92 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
     );
   };
 
-  const startMatchmaking = () => {
+  const handleStartMatchmaking = async () => {
     if (selectedTags.length === 0) {
       Alert.alert('Select Topics', 'Please select at least one topic before starting matchmaking.');
       return;
     }
+    setIsMatchmaking(true);
+    setStatus('Joining matchmaking queue...');
 
-    if (socket) {
-      setIsMatchmaking(true);
-      setStatus('Searching for a match...');
-      socket.send(JSON.stringify({ type: 'start_matchmaking', tags: selectedTags }));
-    } else {
-      Alert.alert('Error', 'WebSocket connection not established.');
+    try {
+      // Step 1: Join Matchmaking
+      const joinResponse = await fetch(`${Constants.expoConfig?.extra?.API_URL}/joinMatchmaking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+
+      if (!joinResponse.ok) throw new Error('Failed to join matchmaking.');
+
+      // Step 2: Poll for Token
+      const tokenPolling = setInterval(async () => {
+        const tokenResponse = await fetch(`${Constants.expoConfig?.extra?.API_URL}/getToken`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username }),
+        });
+
+        const responseText = await tokenResponse.text();
+        if (tokenResponse.status === 200) {
+          clearInterval(tokenPolling);
+          setToken(responseText);
+          setStatus('Token received. Connecting to game...');
+          initiateWebSocket(responseText);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error(error);
+      setStatus('Error occurred during matchmaking.');
+      setIsMatchmaking(false);
     }
+  };
+
+  const initiateWebSocket = (receivedToken: string) => {
+    const newSocket = new WebSocket(`${Constants.expoConfig?.extra?.WS_URL}?token=${receivedToken}`);
+
+    newSocket.onopen = () => {
+      console.log('WebSocket connection established');
+      setStatus('Connected. Waiting for the opponent...');
+    };
+
+    newSocket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.message === 'Both users now connected') {
+        setStatus('Match found! Starting quiz...');
+        navigation.navigate('Quiz', { token: receivedToken });
+      } else if (message.message === 'Waiting for other user to connect') {
+        setStatus('Waiting for the other user...');
+      }
+    };
+
+    newSocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setStatus('WebSocket connection error.');
+    };
+
+    newSocket.onclose = () => {
+      setStatus('WebSocket connection closed.');
+      setSocket(null);
+    };
+
+    setSocket(newSocket);
+  };
+
+  const handleLeaveMatchmaking = async () => {
+    if (isMatchmaking) {
+      try {
+        await fetch('http://localhost:3000/leaveMatchmaking', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username }),
+        });
+        setStatus('Left matchmaking.');
+      } catch (error) {
+        console.error('Error leaving matchmaking:', error);
+      }
+    }
+    setIsMatchmaking(false);
   };
 
   return (
@@ -106,19 +155,13 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
             )}
             contentContainerStyle={styles.tagList}
           />
-          <Button title="Start Matchmaking" onPress={startMatchmaking} />
+          <Button title="Start Matchmaking" onPress={handleStartMatchmaking} />
         </>
       ) : (
         <>
+          <ActivityIndicator size="large" color="#6200ea" />
           <Text style={styles.status}>{status}</Text>
-          <Button
-            title="Cancel Matchmaking"
-            onPress={() => {
-              setIsMatchmaking(false);
-              setStatus('Select topics for your live quiz.');
-              socket?.close();
-            }}
-          />
+          <Button title="Cancel Matchmaking" onPress={handleLeaveMatchmaking} />
         </>
       )}
     </View>

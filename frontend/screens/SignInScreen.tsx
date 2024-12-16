@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { View, Alert } from 'react-native';
-import { TextInput, Button, Text, Title } from 'react-native-paper';
+import { View, Alert, Text, TouchableOpacity } from 'react-native';
+import { TextInput, Button, Title } from 'react-native-paper';
 import { NavigationProp } from '@react-navigation/native';
 import Constants from 'expo-constants';
-
-
 
 export default function SignInScreen({ navigation }: { navigation: NavigationProp<any> }) {
   const [username, setUsername] = useState('');
@@ -22,8 +20,7 @@ export default function SignInScreen({ navigation }: { navigation: NavigationPro
 
       if (response.ok) {
         Alert.alert('Success', 'User logged in successfully');
-        navigation.navigate('Home'); // Quiz is temporary. we need to test out the UI
-
+        navigation.navigate('Home'); // Navigate to Home screen after successful login
       } else {
         const errorText = await response.text();
         Alert.alert('Error', errorText);
@@ -53,6 +50,13 @@ export default function SignInScreen({ navigation }: { navigation: NavigationPro
       <Button mode="contained" onPress={handleSignIn}>
         Sign In
       </Button>
+
+      <View style={{ marginTop: 16, alignItems: 'center' }}>
+        <Text>Don't have an account?</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+          <Text style={{ color: '#6200ea', fontWeight: 'bold' }}>Sign Up</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

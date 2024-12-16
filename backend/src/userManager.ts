@@ -7,53 +7,81 @@ import { connectDB } from './init_db';
 
 const baseELO = 1000
 
-async function signup( req: Request, res: Response ) : Promise<void> {
-    const { username, firstName, lastName, password } = req.body;
-  
-    // Validate the input (you can add more validation here)
-    if (!username || !firstName || !lastName || !password) {
-      res.status(400).send('username, firstName, lastName, and password are required');
-      return;
-    }
-  
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
+async function signup(req: Request, res: Response): Promise<void> {
+    const { 
+        username, 
+        email, 
+        firstName, 
+        lastName, 
+        password, 
+        birthdate, 
+        country, 
+        interests 
+    } = req.body;
 
+    // Validate required fields
+    if (!username || !email || !firstName || !lastName || !password ) {
+        res.status(400).send('All fields (username, email, first name, last name, and password) are required');
+        return;
+    }
+
+    // Validate interests field
+    if (interests && !Array.isArray(interests)) {
+        res.status(400).send('Interests must be an array');
+        return;
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
         const connection = await connectDB();
 
-        const checkQuery = 'SELECT * FROM USER WHERE username = ?';
-        const [ rows ] = await connection.query(checkQuery, [username]);
+        // Check if the username or email already exists
+        const checkQuery = 'SELECT * FROM USER WHERE username = ? OR email = ?';
+        const [rows] = await connection.query(checkQuery, [username, email]);
+
         if (Array.isArray(rows) && rows.length > 0) {
-            console.error('User already exists');
-            res.status(400).send('User already exists');
+            res.status(400).send('Username or email already exists');
             return;
         }
 
-        // Save the new user to the database
-        const addQuery = 'INSERT INTO user (firstName, lastName, username, password, elo) VALUES (?, ?, ?, ?, ?)';
-        let [ result, fields ] = await connection.query(addQuery, [firstName, lastName, username, hashedPassword, baseELO]);
-        if ((result as mysql.OkPacket).affectedRows === 0 || !(result as mysql.OkPacket).insertId) {
-            console.error('Error inserting user');
+        // Insert new user into the database
+        const addQuery = `
+            INSERT INTO USER 
+            (firstName, lastName, username, email, password, elo, interests) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        const [result] = await connection.query(addQuery, [
+            firstName,
+            lastName,
+            username,
+            email,
+            hashedPassword,
+            baseELO,
+            interests ? JSON.stringify(interests) : null // Store interests as JSON or null
+        ]);
+
+        // Check if the user was successfully inserted
+        if ((result as any).affectedRows === 0 || !(result as any).insertId) {
             res.status(500).send('Error creating user');
             return;
         }
-        else {
-            console.log('User registered successfully');
-            req.session.user = {
-                username,
-                firstName,
-                lastName,
-                elo: baseELO,
-            };
-            req.session.save();
-            res.status(201).send('User registered successfully');
-            return;
-        }
-    }
-    catch (error) {
+
+        // Set the session user
+        req.session.user = {
+            id: (result as any).insertId,
+            username,
+            firstName,
+            lastName,
+            email,
+            elo: baseELO,
+            interests: interests || [],
+        };
+        req.session.save();
+
+        res.status(201).send('User registered successfully');
+    } catch (error) {
         console.error('Error inserting user:', error);
         res.status(500).send('Error creating user');
-        return;
     }
 }
 

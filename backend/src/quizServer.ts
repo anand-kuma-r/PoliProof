@@ -245,7 +245,36 @@ async function getAllQuizzes(req: Request, res: Response) {
         }
     }
 }
+async function getUserInfo(req: Request, res: Response): Promise<void> {
+    if (!req.session || !req.session.user) {
+        console.log('No user logged in');
+        res.status(400).send('No user logged in');
+        return;
+    }
+    
+    const userId = req.session.user.id;
+    const connection = await connectDB();
+    
+    try {
+        const userLookupQuery = 'SELECT * FROM USER WHERE id = ?';
+        const [rows] = await connection.query(userLookupQuery, [userId]);
+        
+        if (!Array.isArray(rows) || rows.length === 0) {
+            res.status(404).send('User not found');
+            return;
+        }
+        
+        const userInfo = rows[0]; // Get the first (and only) user record
+        res.status(200).send(userInfo);
+    } catch (error) {
+        console.error('Error retrieving user information:', error);
+        res.status(500).send('An error occurred while retrieving user information');
+    } finally {
+        if (connection) {
+            connection.end();
+        }
+    }
+}
 
 
-
-export { getQuiz, eloUpdate, getDynamicQuiz ,getAllQuizzes};
+export { getQuiz, eloUpdate, getDynamicQuiz ,getAllQuizzes, getUserInfo};
