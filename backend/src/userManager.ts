@@ -1,11 +1,62 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import mysql from 'mysql2/promise';
+import mysql, { RowDataPacket } from 'mysql2/promise';
 
 
 import { connectDB } from './init_db';
 
 const baseELO = 1000
+
+async function getLastDate( currDate: string ) : Promise<string> {
+    const date = new Date(currDate);
+
+    date.setDate(date.getDate() - 1);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+async function streakUpdate( username: string ) : Promise<boolean> {
+    try {
+        const connection = await connectDB();
+        const checkQuery = 'SELECT STREAK, STREAKDATE FROM USER WHERE username = ?';
+        const [ rows ] = await connection.query(checkQuery, [username]);
+
+        if (Array.isArray(rows) && rows.length > 0) {
+            const { STREAK, STREAKDATE } = rows[0] as RowDataPacket;
+            const today = new Date();
+            const dateString = today.toISOString().split('T')[0];
+
+            // If we already logged in no need to update
+            if (STREAKDATE === dateString) {
+                return true;
+            }
+
+            // If we are adding to our streak for logging in today
+            if (STREAKDATE === getLastDate(dateString)) {
+                const updateStreakQuery = 'UPDATE USER SET STREAK = ?, STREAKDATE = ? WHERE username = ?';
+                await connection.query(updateStreakQuery, [STREAK + 1, dateString, username]);
+                return true;
+            }
+
+            // If we haven't logged in yesterday
+            const updateStreakQuery = 'UPDATE USER SET STREAK = ?, STREAKDATE = ? WHERE username = ?';
+            await connection.query(updateStreakQuery, [1, dateString, username]);
+            return true;
+        }
+        else {
+            console.log('Invalid username');
+            return false;
+        }
+    }
+    catch (error) {
+        console.error('Error updating streak:', error);
+        return false;
+    }
+}
 
 async function signup(req: Request, res: Response): Promise<void> {
     const { 
@@ -79,6 +130,7 @@ async function signup(req: Request, res: Response): Promise<void> {
         req.session.save();
 
         res.status(201).send('User registered successfully');
+            streakUpdate(username);
     } catch (error) {
         console.error('Error inserting user:', error);
         res.status(500).send('Error creating user');
@@ -111,6 +163,7 @@ async function login( req: Request, res: Response ) : Promise<void> {
                     req.session.save();
                     console.log('Login successful');
                     res.status(200).send('Login successful');
+                    streakUpdate(username);
                     return;
                 }
             }
