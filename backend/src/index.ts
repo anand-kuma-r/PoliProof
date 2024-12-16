@@ -2,9 +2,13 @@ import express, { Request, Response } from 'express';
 import session, { SessionData } from 'express-session';
 import bodyParser from 'body-parser';
 
+import http from 'http';
+import { WebSocket } from 'ws';
+
 import { initDB } from './init_db';
 import { login, signup, logout } from './userManager';
 import { getQuiz, eloUpdate, getDynamicQuiz, getAllQuizzes } from './quizServer';
+import { handleWebSocketConnection } from './webRTC';
 
 require('dotenv').config();
 
@@ -18,6 +22,7 @@ initDB();
 
 // Route handlers
 const app = express();
+const port = 3000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -35,7 +40,6 @@ app.use(
     })
 );
 
-const port = 3000;
 
 app.all('/', (req: Request, res: Response) => {
     res.send('Hello World!');
@@ -57,6 +61,12 @@ app.get('/get-dynamic-quiz', getDynamicQuiz);
 app.get('/get-all-quizzes', getAllQuizzes);
 
 app.put('/elo-update', eloUpdate);
+
+const server = http.createServer(app);
+
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', handleWebSocketConnection);
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
