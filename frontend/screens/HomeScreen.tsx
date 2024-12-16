@@ -53,19 +53,23 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
     );
   }
 
+  const displayedQuizzes = quizzes.slice(0, 3); // Always display only the first 3 quizzes
+
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>Available Quizzes</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>Available Quizzes</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('QuizList')}>
+          <Text style={styles.seeMoreText}>See More</Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
-        data={quizzes}
+        data={displayedQuizzes}
         keyExtractor={(item) => item.quizId.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.quizTile}
-            onPress={() => {
-              // console.log(item.quizId); // Log the quizId
-              navigation.navigate('Quiz', { quizId: item.quizId });
-            }}
+            onPress={() => navigation.navigate('Quiz', { quizId: item.quizId })}
           >
             <Image source={{ uri: item.imgUrl }} style={styles.quizImage} />
             <View style={styles.quizDetails}>
@@ -79,6 +83,24 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
         )}
         contentContainerStyle={styles.listContent}
       />
+      <TouchableOpacity
+        style={styles.liveQuizzesButton}
+        onPress={() => navigation.navigate('Matchmaking')}
+      >
+        <Text style={styles.liveQuizzesButtonText}>Live Quizzes</Text>
+      </TouchableOpacity>
+      {/* Placeholder for bottom navigation bar */}
+      <View style={styles.navBar}>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Text style={styles.navText}>Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Resources')}>
+          <Text style={styles.navText}>Resources</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+          <Text style={styles.navText}>Home</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -95,12 +117,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   headerText: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 16,
-    textAlign: 'center',
+  },
+  seeMoreText: {
+    fontSize: 16,
+    color: '#6200ea',
+    fontWeight: 'bold',
   },
   listContent: {
     paddingBottom: 16,
@@ -111,8 +142,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
-    elevation: 3, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
+    elevation: 3,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -141,5 +172,35 @@ const styles = StyleSheet.create({
   quizDescription: {
     fontSize: 14,
     color: '#555',
+  },
+  liveQuizzesButton: {
+    backgroundColor: '#6200ea',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 80, // Leave space for navbar
+  },
+  liveQuizzesButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  navBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+  },
+  navText: {
+    fontSize: 16,
+    color: '#6200ea',
+    fontWeight: 'bold',
   },
 });
