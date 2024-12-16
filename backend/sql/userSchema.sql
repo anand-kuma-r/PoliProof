@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS USER (
     elo FLOAT NOT NULL,
     interests JSON DEFAULT NULL,
     streak INT DEFAULT 0,
-    streakDate VARCHAR(20) DEFAULT NULL,
+    streakDate DATE DEFAULT NULL,
     pastQuizzes JSON DEFAULT NULL,  -- Added to store an array of quiz IDs
     liveQuizzes JSON DEFAULT NULL     -- Added to store an array of objects with user IDs and timestamps
 );

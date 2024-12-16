@@ -8,14 +8,19 @@ import { connectDB } from './init_db';
 const baseELO = 1000
 
 async function getLastDate( currDate: string ) : Promise<string> {
+    console.log('Input date is ' + currDate);
     const date = new Date(currDate);
 
+    date.setHours(0, 0, 0, 0);
+    console.log('Input date raw form is ' + date);
     date.setDate(date.getDate() - 1);
+    console.log('Last date raw form is ' + date);
 
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
 
+    console.log('Last date is ' + `${year}-${month}-${day}`);
     return `${year}-${month}-${day}`;
 }
 
@@ -27,21 +32,24 @@ async function streakUpdate( username: string ) : Promise<boolean> {
 
         if (Array.isArray(rows) && rows.length > 0) {
             const { streak, streakDate } = rows[0] as RowDataPacket;
-            const today = new Date();
-            const dateString = today.toISOString().split('T')[0];
+            console.log('Database date: ' + streakDate);
 
-            if (streakDate === dateString) {
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            console.log("Today's date: " + todayString);
+
+            if (streakDate === todayString) {
                 return true;
             }
 
-            if (streakDate === getLastDate(dateString)) {
+            if (streakDate === getLastDate(todayString)) {
                 const updateStreakQuery = 'UPDATE USER SET STREAK = ?, STREAKDATE = ? WHERE username = ?';
-                await connection.query(updateStreakQuery, [streak + 1, dateString, username]);
+                await connection.query(updateStreakQuery, [streak + 1, todayString, username]);
                 return true;
             }
 
             const updateStreakQuery = 'UPDATE USER SET STREAK = ?, STREAKDATE = ? WHERE username = ?';
-            await connection.query(updateStreakQuery, [1, dateString, username]);
+            await connection.query(updateStreakQuery, [1, todayString, username]);
             return true;
         }
         else {
@@ -92,7 +100,6 @@ async function signup(req: Request, res: Response): Promise<void> {
             return;
         }
 
-<<<<<<< HEAD
         // Insert new user into the database
         const addQuery = `
             INSERT INTO USER 
@@ -116,7 +123,6 @@ async function signup(req: Request, res: Response): Promise<void> {
             res.status(500).send('Error creating user');
             return;
         }
-
         // Set the session user
         req.session.user = {
             id: (result as any).insertId,
@@ -126,11 +132,11 @@ async function signup(req: Request, res: Response): Promise<void> {
             email,
             elo: baseELO,
             interests: interests || [],
+            streak: 1
         };
         req.session.save();
-
         res.status(201).send('User registered successfully');
-            streakUpdate(username);
+
     } catch (error) {
         console.error('Error inserting user:', error);
         res.status(500).send('Error creating user');
@@ -202,7 +208,6 @@ async function logout( req: Request, res: Response ) : Promise<void> {
 
 async function getStreak( req: Request, res: Response ) : Promise<void> {
     if (req.session && req.session.user) {
-        res.status(200).send(req.session.user.streak);
         const checkQuery = 'SELECT STREAK FROM USER WHERE username = ?';
         const connection = await connectDB();
         const [ rows ] = await connection.query(checkQuery, [req.session.user.username]);
@@ -210,7 +215,7 @@ async function getStreak( req: Request, res: Response ) : Promise<void> {
             req.session.user.streak = (rows[0] as RowDataPacket).streak;
         }
         await connection.end();
-        res.status(200).send(req.session.user.streak);
+        res.status(200).json({streak: req.session.user.streak});
         return;
     } else {
         console.log('No user logged in');
