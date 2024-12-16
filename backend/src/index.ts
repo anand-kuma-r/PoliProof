@@ -2,8 +2,8 @@ import express, { application, Request, Response } from 'express';
 import session, { SessionData } from 'express-session';
 import bodyParser from 'body-parser';
 
-import http from 'http';
-import { WebSocket } from 'ws';
+import { createServer} from 'http';
+import { WebSocket, WebSocketServer } from 'ws';
 
 import { initDB } from './init_db';
 import { login, signup, logout } from './userManager';
@@ -109,12 +109,12 @@ app.delete('/leaveMatchmaking', (req: Request, res: Response) => {
     res.status(200).send('Token cleared');
 });
 
-const server = http.createServer(app);
+const server = createServer(app);
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server: server });
 
-wss.on('connection', handleWebSocketConnection);
+wss.on('connection', (ws, req) => handleWebSocketConnection(ws, req as Request));
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
