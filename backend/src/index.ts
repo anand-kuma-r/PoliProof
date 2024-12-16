@@ -84,12 +84,12 @@ app.post('/joinMatchmaking', (req: Request, res: Response) => {
  * 400: No username is provided
  * 202: Match not made yet, token is not sent
  */
-app.patch('/getToken', (req: Request, res: Response) => {
+app.get('/getToken', (req: Request, res: Response) => {
     if (!req.body || !req.body.username) {
         res.status(400).send('No username provided');
         return;
     }
-    const token = matchmakingManager.getToken(req.body.username);
+    const token = matchmakingManager.userPing(req.body.username);
     if (!token) {
         res.status(202).send('Match not made yet');
         return;

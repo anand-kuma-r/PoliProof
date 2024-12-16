@@ -18,11 +18,12 @@ import { generateGame } from "./webRTC";
 const MAX_QUEUE_SIZE = 500;
 const MAX_WAITING_PAIRS = 10;
 const TIME_INTERVAL = 100;
-const RECENT_TIME_GAP = 5;
+const RECENT_TIME_GAP = 20;
 class MatchmakingManager {
     private usernameTokenMap: Map<string, string>;
     private qPointer: number;
     private qSize: number
+    private qTail: number;
     private q: Array<string>;
     private timestamps: Map<string, number>;
     private waitingPairs: number;
@@ -31,6 +32,7 @@ class MatchmakingManager {
     constructor() {
         this.usernameTokenMap = new Map<string, string>();
         this.qPointer = 0;
+        this.qTail = 0;
         this.qSize = 0;
         this.q = new Array(MAX_QUEUE_SIZE);
         this.timestamps = new Map<string, number>();
@@ -39,21 +41,25 @@ class MatchmakingManager {
 
     // Returns if user is in queue (including if just added)
     addToQueue(username : string) : boolean {
+        console.log('Adding user ' + username + ' to queue');
         // If we have the user in timestamps it means the user is already in queue
         if (this.timestamps.has(username)) {
             this.setTime(username);
+            console.log('User already in queue, set time to ' + this.timestamps.get(username));
             return true;
         }
         // If queue is full, return false
         if (this.qSize >= MAX_QUEUE_SIZE) {
+            console.log('Queue is full');
             return false;
         }
         this.setTime(username);
 
         // Add to queue
-        this.q[this.qPointer] = username;
-        this.qPointer = (this.qPointer + 1) % MAX_QUEUE_SIZE;
+        this.q[this.qTail] = username;
+        this.qTail = (this.qTail + 1) % MAX_QUEUE_SIZE;
         this.qSize++;
+        console.log('User added to queue, set time to ' + this.timestamps.get(username));
         return true;
     }
 
@@ -66,35 +72,32 @@ class MatchmakingManager {
      * @returns A boolean indicating whether two users were successfully removed from the queue and a game generated
      */
     popQueue() : boolean {
+        console.log('Popping queue');
         if ( this.waitingPairs > MAX_WAITING_PAIRS) {
+            console.log('Too many waiting pairs');
             return false;
         }
         if ( this.qSize < 2) {
+            console.log('Not enough users in queue');
             return false;
         }
         let userArr = [];
         // First, we need to load in valid users
-        while (this.qSize > 2 && userArr.length < 2) {
+        while (this.qSize > 0 && userArr.length < 2) {
             const username = this.q[this.qPointer];
             if (this.isTimeRecent(username)) {
+                console.log('Valid user ' + username + ' with time ' + this.timestamps.get(username));
                 userArr.push(username);
+            }
+            else {
+                console.log('Invalid user ' + username + ' with time ' + this.timestamps.get(username));
             }
             this.qPointer = (this.qPointer + 1) % MAX_QUEUE_SIZE;
             this.qSize--;
         }
-        // If we only got one valid user drop them back in the queue
-        if (userArr.length > 0) {
-            const username = userArr.pop();
-            if (username) {
-                this.qPointer = (this.qPointer - 1) % MAX_QUEUE_SIZE;
-                this.q[this.qPointer] = username;
-            }
-            return false;
-        }
-
-        // Generate token
-        const [ token1, token2 ] = generateGame();
-        if (!token1 || !token2) {
+        console.log('All Valid users: ' + userArr);
+        if (userArr.length < 2) {
+            // If we only got one valid user drop them back in the queue
             while (userArr.length > 0) {
                 const username = userArr.pop();
                 if (username) {
@@ -104,22 +107,54 @@ class MatchmakingManager {
             }
             return false;
         }
+        else {
+            // Generate token
+            const [ token1, token2 ] = generateGame();
+            if (!token1 || !token2) {
+                while (userArr.length > 0) {
+                    const username = userArr.pop();
+                    if (username) {
+                        this.qPointer = (this.qPointer - 1) % MAX_QUEUE_SIZE;
+                        this.q[this.qPointer] = username;
+                    }
+                }
+                return false;
+            }
 
-        this.waitingPairs++;
-        this.usernameTokenMap.set(userArr[0], token1);
-        this.clearTime(userArr[0]);
-        this.usernameTokenMap.set(userArr[1], token2);
-        this.clearTime(userArr[1]);
+            this.waitingPairs++;
+            this.usernameTokenMap.set(userArr[0], token1);
+            this.clearTime(userArr[0]);
+            this.usernameTokenMap.set(userArr[1], token2);
+            this.clearTime(userArr[1]);
 
-        // Now, we can safely remove the two users
-        return true;
+            console.log('Added user ' + userArr[0] + ' with token ' + token1);
+            console.log('Added user ' + userArr[1] + ' with token ' + token2);
+
+            // Now, we can safely remove the two users
+            return true;
+        }
+    }
+
+    printQueue(){
+        console.log('Current queue is:');
+        for (let i = 0; i < this.qSize; i++) {
+            console.log(this.q[(this.qPointer + i) % MAX_QUEUE_SIZE]);
+        }
+        console.log('Queue size is ' + this.qSize);
     }
 
     userPing(username : string) : string | undefined {
+        console.log('User ' + username + ' pinged in');
+        if (!this.timestamps.has(username) && !this.usernameTokenMap.has(username)) {
+            console.log('User not in queue');
+            return undefined;
+        }
+        this.printQueue();
         this.popQueue();
         const token = this.getToken(username);
+        console.log('Resulting token is: ' + token);
         if (token) {
-            console.log(`User ${username} pinged in and giving token ${token}`);
+            console.log(`User ${username} pinged in and given token ${token}`);
             return token;
         }
         this.setTime(username);
@@ -145,7 +180,8 @@ class MatchmakingManager {
             return false;
         }
         const time = new Date().getTime();
-        return ((time / TIME_INTERVAL - (timestamp as number)) < RECENT_TIME_GAP);
+        console.log('Current time is ' + time/TIME_INTERVAL + ', timestamp is ' + timestamp);
+        return ( Math.abs(time/TIME_INTERVAL - (timestamp as number)) < ( RECENT_TIME_GAP * (1000 / TIME_INTERVAL)) );
     }
     
     clearTime(username : string) {
