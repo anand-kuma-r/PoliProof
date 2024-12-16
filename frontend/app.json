@@ -13,7 +13,6 @@
       "backgroundColor": "#ffffff"
     },
     "extra": {
-      "API_URL": "https://aa67-71-35-24-99.ngrok-free.app",
       "ENV": "development"
     },
     "ios": {
