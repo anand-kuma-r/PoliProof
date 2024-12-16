@@ -132,15 +132,34 @@ async function endGame(req : Request, res : Response){
     
 }
 
-const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) => {
+const handleWebSocketConnection = (ws : WebSocket, req : Request) => {
     console.log('New WebSocket connection');
+
+    if (!req){
+        console.error('Request not found');
+        ws.send(JSON.stringify({ error: "Request not found. Connection will be closed." }), () => {
+            ws.close();
+        });
+        return;
+    }
+
+    if (!req.url) {
+        console.error('URL not found in request');
+        ws.send(JSON.stringify({ error: "URL not found in request. Connection will be closed." }), () => {
+            ws.close();
+        });
+        return;
+    }
 
     const urlParams = new URLSearchParams(req.url.split('?')[1]);
     const token = urlParams.get('token');
 
     if (!token) {
-    console.error('Token not found in URL parameters');
-    return;
+        console.error('Token not found in URL parameters');
+        ws.send(JSON.stringify({ error: "Token not found in URL parameters. Connection will be closed." }), () => {
+            ws.close();
+        });
+        return;
     }
 
     // Check if this token is associated with a game
@@ -198,9 +217,14 @@ const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) 
 
   ws.on('message', (message : Data) => {
 
-    console.log('Received:', message);
-    if (typeof message === 'string') {
-        message = JSON.parse(message);
+    const messageString = message instanceof Buffer 
+    ? message.toString('utf-8') 
+    : message;
+
+    console.log('Received:', messageString);
+
+    if (typeof messageString === 'string') {
+        message = JSON.parse(messageString);
     }
     else {
         console.error('Message is not a string');
@@ -209,7 +233,7 @@ const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) 
 
     const pairClient = connectionMap.get(ws);
     if (pairClient) {
-        pairClient.send(message);
+        pairClient.send(messageString);
     }
     else {
         console.log('No pair client found');
