@@ -6,6 +6,8 @@ import ResultsScreen from './screens/ResultsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import SignUpScreen from './screens/SignUpScreen';
 import SignInScreen from './screens/SignInScreen';
+import MatchmakingScreen from './screens/MatchmakingScreen';
+
 
 
 const Stack = createNativeStackNavigator();
@@ -20,6 +22,7 @@ export default function App() {
         <Stack.Screen name="Quiz" component={QuizScreen} />
         <Stack.Screen name="Results" component={ResultsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="Matchmaking" component={MatchmakingScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
