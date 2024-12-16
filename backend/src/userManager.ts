@@ -92,11 +92,12 @@ async function signup(req: Request, res: Response): Promise<void> {
             return;
         }
 
+<<<<<<< HEAD
         // Insert new user into the database
         const addQuery = `
             INSERT INTO USER 
-            (firstName, lastName, username, email, password, elo, interests) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (firstName, lastName, username, email, password, elo, interests, streak, streakDate) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const [result] = await connection.query(addQuery, [
             firstName,
@@ -105,7 +106,9 @@ async function signup(req: Request, res: Response): Promise<void> {
             email,
             hashedPassword,
             baseELO,
-            interests ? JSON.stringify(interests) : null // Store interests as JSON or null
+            interests ? JSON.stringify(interests) : null, // Store interests as JSON or null
+            1,
+            new Date().toISOString().split('T')[0]
         ]);
 
         // Check if the user was successfully inserted
