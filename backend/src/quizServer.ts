@@ -35,7 +35,7 @@ async function eloUpdate( req: Request, res: Response ) : Promise<void> {
     const questionUpdateQuery = 'UPDATE QUESTION SET elo = ? WHERE id = ?';
     const quizUpdateQuery = 'UPDATE QUIZ SET totalElo = ? WHERE id = ?';
 
-    for (const [ key, winResult ] of req.body.questionResults) {
+    for (const { key, winResult } of req.body.questionResults) {
         const [ question ] = await connection.query('SELECT * FROM QUESTION WHERE id = ?', [ Number(key) ]);
         if (!Array.isArray(question) || question.length === 0) {
             res.status(404).send('Missing Question');
@@ -65,7 +65,7 @@ async function eloUpdate( req: Request, res: Response ) : Promise<void> {
         console.log('Error updating user');
         res.status(500).send('Error updating user');
     }
-
+    
     totalElo /= req.body.questionResults.length;
     if (req.body && req.body.quizId && req.body.quizId != 0){ // Checking for dynamic quiz, no quiz update
         const [ resultQuiz, fieldsQuiz ] = await connection.query(quizUpdateQuery, [totalElo, req.body.quizId]);

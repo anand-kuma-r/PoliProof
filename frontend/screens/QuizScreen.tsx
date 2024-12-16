@@ -90,30 +90,61 @@ export default function QuizScreen({ navigation }: { navigation: any }) {
     } else {
         // Update progress for the final question and navigate to results
         setTimeout(() => {
-            Animated.timing(progress, {
-                toValue: 1, // Fully completed
-                duration: 200,
-                useNativeDriver: false,
-            }).start(() => {
-                if (quiz) {
-                    const correctAnswers = quiz.questions.map((q) => q.correctAnswer);
-                    let score = userAnswers.reduce((acc, answer, index) => {
-                        return acc + (answer === (correctAnswers[index] - 1) ? 1 : 0); // Adjust index
-                    }, 0);
-
-                    // Add the last question's score (if not already included)
-                    const lastAnswer = answerIndex;
-                    if (lastAnswer === (correctAnswers[currentQuestionIndex] - 1)) {
-                        score += 1;
-                    }
-
-                    navigation.navigate('Results', { score, totalQuestions: quiz.questions.length });
-                }
-            });
-        }, 1000);
+          Animated.timing(progress, {
+              toValue: 91, // Fully completed
+              duration: 200,
+              useNativeDriver: false,
+          }).start(async () => {
+              if (quiz) {
+                  const correctAnswers = quiz.questions.map((q) => q.correctAnswer);
+                  let score = userAnswers.reduce((acc, answer, index) => {
+                      return acc + (answer === (correctAnswers[index] - 1) ? 1 : 0); // Adjust index
+                  }, 0);
+      
+                  // Add the last question's score (if not already included)
+                  const lastAnswer = answerIndex;
+                  if (lastAnswer === (correctAnswers[currentQuestionIndex] - 1)) {
+                      score += 1;
+                  }
+      
+                  // Update Elo after calculating the score
+                  await updateElo(score, quiz.questions.length);
+      
+                  navigation.navigate('Results', { score, totalQuestions: quiz.questions.length });
+              }
+          });
+      }, 1000);
     }
 };
 
+const updateElo = async (score: number, totalQuestions: number) => {
+  const percentage = (score / totalQuestions) * 100;
+  const questionResults = userAnswers.map((answer, index) => ({
+    key: quiz?.questions[index]?.id ?? 0, // Added optional chaining to handle null case
+    winResult: answer === (quiz && quiz.questions && quiz.questions[index] ? quiz.questions[index].correctAnswer - 1 : undefined) ? 1 : 0,
+}));
+
+  const requestBody = {
+      questionResults,
+      quizId: quiz?.quizId ?? 0, // Use optional chaining and provide a default value
+  };
+
+  try {
+      const response = await fetch(`${Constants.expoConfig?.extra?.API_URL}/elo-update`, {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+          console.error('Failed to update Elo:', response.statusText);
+      }
+  } catch (error) {
+      console.error('Error updating Elo:', error);
+  }
+};
 
   if (!quiz) {
     return (

@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet, Image } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
-import LottieView from 'lottie-react-native'; // Install with `npm install lottie-react-native`
-import ConfettiCannon from 'react-native-confetti-cannon'; // Install with `npm install react-native-confetti-cannon`
+import LottieView from 'lottie-react-native'; 
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 export default function ResultsScreen({ navigation, route }: { navigation: NavigationProp<any>, route: any }) {
   const { score, totalQuestions } = route.params;
