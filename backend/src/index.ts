@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { application, Request, Response } from 'express';
 import session, { SessionData } from 'express-session';
 import bodyParser from 'body-parser';
 
@@ -8,7 +8,8 @@ import { WebSocket } from 'ws';
 import { initDB } from './init_db';
 import { login, signup, logout } from './userManager';
 import { getQuiz, eloUpdate, getDynamicQuiz, getAllQuizzes } from './quizServer';
-import { handleWebSocketConnection } from './webRTC';
+import { handleWebSocketConnection, endGame } from './webRTC';
+import { MatchmakingManager } from './matchmakingManager';
 
 require('dotenv').config();
 
@@ -40,6 +41,7 @@ app.use(
     })
 );
 
+const matchmakingManager = new MatchmakingManager();
 
 app.all('/', (req: Request, res: Response) => {
     res.send('Hello World!');
@@ -61,6 +63,49 @@ app.get('/get-dynamic-quiz', getDynamicQuiz);
 app.get('/get-all-quizzes', getAllQuizzes);
 
 app.put('/elo-update', eloUpdate);
+
+app.delete('/end-game', endGame);
+
+app.post('/joinMatchmaking', (req: Request, res: Response) => {
+    if (!req.body || !req.body.username) {
+        res.status(400).send('No username provided');
+        return;
+    }
+    matchmakingManager.addToQueue(req.body.username);
+    res.status(200).send('Matchmaking joined');
+});
+
+/**
+ * Get token for a user to connect to the game
+ * @param {Request} req - Express request
+ * @param {Response} res - Express response
+ * @returns {Response}
+ * 200: Token is sent
+ * 400: No username is provided
+ * 202: Match not made yet, token is not sent
+ */
+app.patch('/getToken', (req: Request, res: Response) => {
+    if (!req.body || !req.body.username) {
+        res.status(400).send('No username provided');
+        return;
+    }
+    const token = matchmakingManager.getToken(req.body.username);
+    if (!token) {
+        res.status(202).send('Match not made yet');
+        return;
+    }
+    res.status(200).send(token);
+});
+
+// MAKE SURE TO LEAVE MATCHMAKING BEFORE STARTING GAME
+app.delete('/leaveMatchmaking', (req: Request, res: Response) => {
+    if (!req.body || !req.body.username) {
+        res.status(400).send('No username provided');
+        return;
+    }
+    matchmakingManager.clearToken(req.body.username);
+    res.status(200).send('Token cleared');
+});
 
 const server = http.createServer(app);
 

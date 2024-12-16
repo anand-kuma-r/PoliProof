@@ -43,6 +43,9 @@ class TwoWayMap<T> extends Map<T, T> {
     }
 
     get(key : T) : T | undefined {
+        if (!key) {
+            return undefined;
+        }
         return super.get(key);
     }
 

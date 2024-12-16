@@ -1,6 +1,8 @@
 // websocketHandler.js
 import { WebSocket, Server, Data } from 'ws';
 import { TwoWayMap } from './customClasses';
+import { v4 as uuidv4 } from 'uuid';
+import { Request, Response } from 'express';
 
 const tokenConnectionMap = new Map<string, WebSocket>(); 
 const tokenConnections = new TwoWayMap<string>();
@@ -40,6 +42,74 @@ function initiateConnection(token1 : string, token2 : string) : boolean {
         }
         return false;
     }
+}
+
+
+/**
+ * Generates a pair of tokens that are associated with each other in the token connection map
+ * 
+ * @returns A pair of tokens that are associated with each other
+ */
+function generateGame() : [ string, string ] {
+    try {
+        let token1 = uuidv4();
+        let token2 = uuidv4();
+        while ( tokenConnectionMap.has(token1) || tokenConnectionMap.has(token2) ) {
+            token1 = uuidv4();
+            token2 = uuidv4();
+        }
+        tokenConnections.set(token1, token2);
+        return [ token1, token2 ];
+    } catch (error) {
+        console.error('Failed to generate game', error);
+        return [ '', '' ];
+    }
+}
+
+
+/**
+ * Ends a game associated with a token, and closes the connections associated with the game.
+ * 
+ * @param token The token associated with the game to end
+ * @returns A boolean indicating whether the game was successfully ended
+ */
+async function endGame(req : Request, res : Response){
+    const { token } = req.body;
+    const mySocket = tokenConnectionMap.get(token);
+    if (!mySocket) {
+        console.error('Token is not connected to user');
+        res.status(400).send('Token is not connected to user');
+        return;
+    }
+
+    // First, get the paired token for the game
+    const pairToken  = tokenConnections.get(token);
+    mySocket.send(JSON.stringify({ message: "Game ended, connection will be closed" }), () => {
+        mySocket.close();
+    });
+    tokenConnectionMap.delete(token);
+
+
+    // If there is an associated game, end the connections associated with the game
+    if (pairToken) {
+        const pairSocket = tokenConnectionMap.get(pairToken);
+        if (pairSocket){
+            pairSocket.send(JSON.stringify({ message: "Game ended, connection will be closed" }), () => {
+                pairSocket.close();
+            });
+            tokenConnectionMap.delete(pairToken);
+            connectionMap.remove(pairSocket);
+        }  
+        tokenConnections.remove(pairToken);
+    }
+
+
+    tokenConnections.remove(token);
+    connectionMap.remove(mySocket);
+
+    res.status(200).send('Game ended');
+    return;
+    
 }
 
 const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) => {
@@ -142,4 +212,4 @@ const handleWebSocketConnection = (ws : WebSocket, wss : Server, req : Request) 
 
 };
 
-export { handleWebSocketConnection };
+export { handleWebSocketConnection, generateGame, endGame };
