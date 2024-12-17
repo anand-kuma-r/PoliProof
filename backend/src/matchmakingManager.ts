@@ -18,7 +18,7 @@ import { generateGame } from "./webRTC";
 const MAX_QUEUE_SIZE = 500;
 const MAX_WAITING_PAIRS = 10;
 const TIME_INTERVAL = 100;
-const RECENT_TIME_GAP = 20;
+const RECENT_TIME_GAP = 2000;
 class MatchmakingManager {
     private usernameTokenMap: Map<string, string>;
     private qPointer: number;
@@ -103,6 +103,7 @@ class MatchmakingManager {
                 if (username) {
                     this.qPointer = (this.qPointer - 1) % MAX_QUEUE_SIZE;
                     this.q[this.qPointer] = username;
+                    this.qSize++;
                 }
             }
             return false;

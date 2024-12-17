@@ -61,6 +61,7 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
             credentials: 'include'
           });
           const responseText = await tokenResponse.text();
+          console.log('Token response:', responseText);
           if (tokenResponse.status === 200) {
             setToken(responseText);
             console.log('Token received:', responseText);
