@@ -42,6 +42,12 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
   );
 
   useEffect(() => {
+    if (token && !socket) {
+      initiateWebSocket(token);
+    }
+  }, [token, socket]);
+
+  useEffect(() => {
     console.log('Effect triggered, isSearching:', isSearching);
     let tokenPolling: NodeJS.Timeout;
 
@@ -116,7 +122,9 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
   };
 
   const initiateWebSocket = (receivedToken: string) => {
-    const newSocket = new WebSocket(`${Constants.expoConfig?.extra?.WS_URL}?token=${receivedToken}`);
+    const socketString = `${Constants.expoConfig?.extra?.WS_URL}?token=${receivedToken}`;
+    console.log('Initiating WebSocket connection:', socketString);
+    const newSocket = new WebSocket(socketString);
 
     newSocket.onopen = () => {
       console.log('WebSocket connection established');
@@ -124,6 +132,7 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
     };
 
     newSocket.onmessage = (event) => {
+      console.log('WebSocket message received:', event.data);
       const message = JSON.parse(event.data);
       if (message.message === 'Both users now connected') {
         setStatus('Match found! Starting quiz...');

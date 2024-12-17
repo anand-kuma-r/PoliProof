@@ -14,7 +14,7 @@
     },
     "extra": {
       "API_URL": "https://suitable-kangaroo-immensely.ngrok-free.app",
-      "WS_URL": "ws://suitable-kangaroo-immensely.ngrok-free.app",
+      "WS_URL": "wss://suitable-kangaroo-immensely.ngrok-free.app",
       "ENV": "development"
     },
     "ios": {
