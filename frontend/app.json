@@ -13,8 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "extra": {
-      "API_URL": "https://cf4f-71-35-24-99.ngrok-free.app",
-      "WS_URL": "ws://cf4f-71-35-24-99.ngrok-free.app",
+      "API_URL": "https://suitable-kangaroo-immensely.ngrok-free.app",
+      "WS_URL": "ws://suitable-kangaroo-immensely.ngrok-free.app",
       "ENV": "development"
     },
     "ios": {

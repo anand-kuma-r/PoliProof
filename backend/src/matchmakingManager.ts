@@ -144,7 +144,7 @@ class MatchmakingManager {
     }
 
     userPing(username : string) : string | undefined {
-        console.log('User ' + username + ' pinged in');
+        console.log('\nUser ' + username + ' pinged in');
         if (!this.timestamps.has(username) && !this.usernameTokenMap.has(username)) {
             console.log('User not in queue');
             return undefined;

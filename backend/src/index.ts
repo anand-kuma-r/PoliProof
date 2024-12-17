@@ -72,11 +72,11 @@ app.get('/get-user-info', getUserInfo);
 app.delete('/end-game', endGame);
 
 app.post('/joinMatchmaking', (req: Request, res: Response) => {
-    if (!req.body || !req.body.username) {
-        res.status(400).send('No username provided');
+    if (!req.session || !req.session.user || !req.session.user.username) {
+        res.status(400).send('No user logged in');
         return;
     }
-    matchmakingManager.addToQueue(req.body.username);
+    matchmakingManager.addToQueue(req.session.user.username);
     res.status(200).send('Matchmaking joined');
 });
 
@@ -90,11 +90,11 @@ app.post('/joinMatchmaking', (req: Request, res: Response) => {
  * 202: Match not made yet, token is not sent
  */
 app.get('/getToken', (req: Request, res: Response) => {
-    if (!req.body || !req.body.username) {
+    if (!req.session || !req.session.user) {
         res.status(400).send('No username provided');
         return;
     }
-    const token = matchmakingManager.userPing(req.body.username);
+    const token = matchmakingManager.userPing(req.session.user.username);
     if (!token) {
         res.status(202).send('Match not made yet');
         return;
@@ -104,11 +104,11 @@ app.get('/getToken', (req: Request, res: Response) => {
 
 // MAKE SURE TO LEAVE MATCHMAKING BEFORE STARTING GAME
 app.delete('/leaveMatchmaking', (req: Request, res: Response) => {
-    if (!req.body || !req.body.username) {
-        res.status(400).send('No username provided');
+    if (!req.session || !req.session.user) {
+        res.status(400).send('No user logged in');
         return;
     }
-    matchmakingManager.clearToken(req.body.username);
+    matchmakingManager.clearToken(req.session.user.username);
     res.status(200).send('Token cleared');
 });
 

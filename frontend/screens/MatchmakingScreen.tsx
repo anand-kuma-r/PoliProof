@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, Button, Alert, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
 
 interface Tag {
@@ -23,14 +23,61 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
   const [username, setUsername] = useState('TestUser123'); // Replace this dynamically in your app
   const [token, setToken] = useState<string | null>(null);
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [isFocused, setIsFocused] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useFocusEffect(
+    // Cleanup when component unmounts
+    React.useCallback(() => {
+      console.log('Component in focus');
+      setIsFocused(true);
+
+      return () => {
+        handleLeaveMatchmaking();
+        socket?.close();
+        setIsFocused(false);
+        console.log('Component out of focus');
+      };
+    }, [])
+  );
 
   useEffect(() => {
-    // Cleanup when component unmounts
+    console.log('Effect triggered, isSearching:', isSearching);
+    let tokenPolling: NodeJS.Timeout;
+
+    if (isFocused && isSearching) {
+      tokenPolling = setInterval(async () => {
+        if (!isFocused) {
+          clearInterval(tokenPolling); // Stop polling when focus is lost
+          console.log('Exiting polling loop');
+          return;
+        }
+
+        // Your polling logic
+        try {
+          const tokenResponse = await fetch(`${Constants.expoConfig?.extra?.API_URL}/getToken`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+          });
+          const responseText = await tokenResponse.text();
+          if (tokenResponse.status === 200) {
+            setToken(responseText);
+            console.log('Token received:', responseText);
+            clearInterval(tokenPolling); // Stop polling once you have the token
+            setIsSearching(false);
+          }
+        } catch (error) {
+          console.error('Error during polling:', error);
+          clearInterval(tokenPolling); // Optional: Stop polling if an error occurs
+        }
+      }, 1000);
+    }
+    // Cleanup function when component unmounts or focus changes
     return () => {
-      handleLeaveMatchmaking();
-      socket?.close();
+      if (tokenPolling) clearInterval(tokenPolling); // Clear interval on cleanup
     };
-  }, []);
+  }, [isFocused, isSearching]);
 
   const toggleTagSelection = (tagId: string) => {
     setSelectedTags((prev) =>
@@ -51,31 +98,19 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
       const joinResponse = await fetch(`${Constants.expoConfig?.extra?.API_URL}/joinMatchmaking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        // body: JSON.stringify({ username }),
+        credentials: 'include'
       });
 
       if (!joinResponse.ok) throw new Error('Failed to join matchmaking.');
 
-      // Step 2: Poll for Token
-      const tokenPolling = setInterval(async () => {
-        const tokenResponse = await fetch(`${Constants.expoConfig?.extra?.API_URL}/getToken`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username }),
-        });
+      setIsSearching(true);
 
-        const responseText = await tokenResponse.text();
-        if (tokenResponse.status === 200) {
-          clearInterval(tokenPolling);
-          setToken(responseText);
-          setStatus('Token received. Connecting to game...');
-          initiateWebSocket(responseText);
-        }
-      }, 1000);
     } catch (error) {
       console.error(error);
       setStatus('Error occurred during matchmaking.');
       setIsMatchmaking(false);
+      setIsSearching(false);
     }
   };
 
@@ -111,19 +146,19 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
   };
 
   const handleLeaveMatchmaking = async () => {
-    if (isMatchmaking) {
-      try {
-        await fetch('http://localhost:3000/leaveMatchmaking', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username }),
-        });
-        setStatus('Left matchmaking.');
-      } catch (error) {
-        console.error('Error leaving matchmaking:', error);
-      }
+    console.log('Leaving matchmaking, isMatchmaking:', isMatchmaking);
+    try {
+      await fetch(`${Constants.expoConfig?.extra?.API_URL}/leaveMatchmaking`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      setStatus('Left matchmaking.');
+    } catch (error) {
+      console.error('Error leaving matchmaking:', error);
     }
     setIsMatchmaking(false);
+    setIsSearching(false);
   };
 
   return (
