@@ -7,6 +7,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import SignUpScreen from './screens/SignUpScreen';
 import SignInScreen from './screens/SignInScreen';
 import MatchmakingScreen from './screens/MatchmakingScreen';
+import LiveQuizScreen from './screens/LiveQuizScreen';
 
 
 
@@ -23,6 +24,7 @@ export default function App() {
         <Stack.Screen name="Results" component={ResultsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Matchmaking" component={MatchmakingScreen} />
+        <Stack.Screen name="LiveQuiz" component={LiveQuizScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

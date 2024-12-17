@@ -99,22 +99,35 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
     }
     setIsMatchmaking(true);
     setStatus('Joining matchmaking queue...');
-
+  
     try {
-      // Step 1: Join Matchmaking
       const joinResponse = await fetch(`${Constants.expoConfig?.extra?.API_URL}/joinMatchmaking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // body: JSON.stringify({ username }),
-        credentials: 'include'
+        credentials: 'include',
       });
-
+  
       if (!joinResponse.ok) throw new Error('Failed to join matchmaking.');
-
+  
       setIsSearching(true);
-
+  
+      // Polling to retrieve the token
+      const pollingInterval = setInterval(async () => {
+        const tokenResponse = await fetch(`${Constants.expoConfig?.extra?.API_URL}/getToken`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        const responseText = await tokenResponse.text();
+        if (tokenResponse.status === 200) {
+          clearInterval(pollingInterval);
+          console.log('Token received:', responseText);
+          initiateWebSocket(responseText); // Pass the token to LiveQuizScreen
+          setIsSearching(false);
+        }
+      }, 1000);
     } catch (error) {
-      console.error(error);
+      console.error('Error during matchmaking:', error);
       setStatus('Error occurred during matchmaking.');
       setIsMatchmaking(false);
       setIsSearching(false);
@@ -122,37 +135,8 @@ const MatchmakingScreen = ({ navigation }: { navigation: NavigationProp<any> }) 
   };
 
   const initiateWebSocket = (receivedToken: string) => {
-    const socketString = `${Constants.expoConfig?.extra?.WS_URL}?token=${receivedToken}`;
-    console.log('Initiating WebSocket connection:', socketString);
-    const newSocket = new WebSocket(socketString);
-
-    newSocket.onopen = () => {
-      console.log('WebSocket connection established');
-      setStatus('Connected. Waiting for the opponent...');
-    };
-
-    newSocket.onmessage = (event) => {
-      console.log('WebSocket message received:', event.data);
-      const message = JSON.parse(event.data);
-      if (message.message === 'Both users now connected') {
-        setStatus('Match found! Starting quiz...');
-        navigation.navigate('Quiz', { token: receivedToken });
-      } else if (message.message === 'Waiting for other user to connect') {
-        setStatus('Waiting for the other user...');
-      }
-    };
-
-    newSocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setStatus('WebSocket connection error.');
-    };
-
-    newSocket.onclose = () => {
-      setStatus('WebSocket connection closed.');
-      setSocket(null);
-    };
-
-    setSocket(newSocket);
+    console.log('Navigating to LiveQuizScreen with token:', receivedToken);
+    navigation.navigate('LiveQuiz', { token: receivedToken });
   };
 
   const handleLeaveMatchmaking = async () => {

@@ -35,6 +35,7 @@ export default function QuizScreen({ navigation }: { navigation: any }) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [progress, setProgress] = useState(new Animated.Value(0));
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const [finalScore, setFinalScore] = useState<number>(0);
   const route = useRoute<QuizScreenRouteProp>();
   const { quizId } = route.params;
 
@@ -109,7 +110,7 @@ export default function QuizScreen({ navigation }: { navigation: any }) {
       
                   // Update Elo after calculating the score
                   await updateElo(score, quiz.questions.length);
-      
+                  setFinalScore(score);
                   navigation.navigate('Results', { score, totalQuestions: quiz.questions.length });
               }
           });
@@ -164,7 +165,7 @@ const updateElo = async (score: number, totalQuestions: number) => {
           styles.progressBar,
           {
             width: progress.interpolate({
-              inputRange: [0, 1],
+              inputRange: [0, 0.91],
               outputRange: [0, width],
             }),
           },
@@ -191,12 +192,29 @@ const updateElo = async (score: number, totalQuestions: number) => {
         })}
       </View>
       <Button
-        mode="contained"
-        onPress={() => navigation.navigate('Results')}
-        style={styles.nextButton}
-      >
-        Go to Results
-      </Button>
+    mode="contained"
+    onPress={() => {
+        if (selectedAnswer) {
+            // Fast track to the next question if answered
+            if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
+                setCurrentQuestionIndex(currentQuestionIndex + 1);
+                setSelectedAnswer(null);
+                Animated.timing(progress, {
+                    toValue: (currentQuestionIndex + 1) / (quiz?.questions.length || 1),
+                    duration: 200,
+                    useNativeDriver: false,
+                }).start();
+            } else {
+                // Navigate to results if it's the last question
+                navigation.navigate('Results', { finalScore, totalQuestions: quiz.questions.length });
+            }
+        }
+    }}
+    style={styles.nextButton}
+    disabled={!selectedAnswer} // Disable button if no answer is selected
+>
+    {currentQuestionIndex < (quiz?.questions.length || 0) - 1 ? 'Next Question' : 'Go to Results'}
+</Button>
     </View>
   );
 }
