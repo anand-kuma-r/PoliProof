@@ -72,6 +72,191 @@
           }
         ]
       }
+    },
+    {
+      "quiz": {
+        "name": "Famous Supreme Court Cases",
+        "description": "Test your knowledge of landmark Supreme Court decisions that shaped America.",
+        "tag": "Civics",
+        "img_url": "https://i.postimg.cc/RVD4d05j/image.png",
+        "questions": [
+          {
+            "question": "Which case established the principle of judicial review in 1803?",
+            "optionA": "Marbury v. Madison",
+            "optionB": "Plessy v. Ferguson",
+            "optionC": "Roe v. Wade",
+            "optionD": "Brown v. Board of Education",
+            "correctAnswer": 1,
+            "elo": 1000
+          },
+          {
+            "question": "Which case ruled that racial segregation in public schools is unconstitutional?",
+            "optionA": "Gideon v. Wainwright",
+            "optionB": "Brown v. Board of Education",
+            "optionC": "Miranda v. Arizona",
+            "optionD": "Dred Scott v. Sandford",
+            "correctAnswer": 2,
+            "elo": 1200
+          },
+          {
+            "question": "What case in 1973 ruled on the issue of abortion rights?",
+            "optionA": "Griswold v. Connecticut",
+            "optionB": "Roe v. Wade",
+            "optionC": "Loving v. Virginia",
+            "optionD": "Citizens United v. FEC",
+            "correctAnswer": 2,
+            "elo": 1400
+          }
+        ]
+      }
+    },
+    {
+      "quiz": {
+        "name": "The New Deal",
+        "description": "Explore the programs and policies introduced during Franklin D. Roosevelt's presidency.",
+        "tag": "US History",
+        "img_url": "https://i.postimg.cc/85NScJMr/image.png",
+        "questions": [
+          {
+            "question": "Which agency was created to provide jobs and stimulate the economy during the Great Depression?",
+            "optionA": "FDIC",
+            "optionB": "WPA",
+            "optionC": "NRA",
+            "optionD": "CCC",
+            "correctAnswer": 2,
+            "elo": 1000
+          },
+          {
+            "question": "What was the main goal of the Social Security Act of 1935?",
+            "optionA": "To fund public education",
+            "optionB": "To provide unemployment insurance",
+            "optionC": "To establish pensions for retirees",
+            "optionD": "To regulate the banking industry",
+            "correctAnswer": 3,
+            "elo": 1100
+          },
+          {
+            "question": "Which program focused on electrifying rural America?",
+            "optionA": "TVA",
+            "optionB": "AAA",
+            "optionC": "REA",
+            "optionD": "FSA",
+            "correctAnswer": 3,
+            "elo": 1300
+          }
+        ]
+      }
+    },
+    {
+      "quiz": {
+        "name": "Global Climate Agreements",
+        "description": "How much do you know about international efforts to combat climate change?",
+        "tag": "Climate Change",
+        "img_url": "https://i.postimg.cc/QCnGffPp/image.png",
+        "questions": [
+          {
+            "question": "What agreement aimed to limit global temperature rise to below 2°C?",
+            "optionA": "Kyoto Protocol",
+            "optionB": "Paris Agreement",
+            "optionC": "Montreal Protocol",
+            "optionD": "Copenhagen Accord",
+            "correctAnswer": 2,
+            "elo": 1000
+          },
+          {
+            "question": "Which protocol aimed to reduce greenhouse gases but excluded developing nations?",
+            "optionA": "Kyoto Protocol",
+            "optionB": "Paris Agreement",
+            "optionC": "Doha Amendment",
+            "optionD": "Bali Action Plan",
+            "correctAnswer": 1,
+            "elo": 1200
+          },
+          {
+            "question": "What international conference in 1992 set the stage for global climate discussions?",
+            "optionA": "Earth Summit in Rio",
+            "optionB": "UN Climate Change Conference",
+            "optionC": "Montreal Summit",
+            "optionD": "Stockholm Conference",
+            "correctAnswer": 1,
+            "elo": 1400
+          }
+        ]
+      }
+    },
+    {
+      "quiz": {
+        "name": "Public Policy Basics",
+        "description": "Understand the key concepts and examples of public policy decisions.",
+        "tag": "Public Policy",
+        "img_url": "https://i.postimg.cc/KvRy1ykQ/image.png",
+        "questions": [
+          {
+            "question": "Which of the following is an example of fiscal policy?",
+            "optionA": "Setting interest rates",
+            "optionB": "Government spending on infrastructure",
+            "optionC": "Regulating the banking system",
+            "optionD": "Enacting carbon taxes",
+            "correctAnswer": 2,
+            "elo": 1000
+          },
+          {
+            "question": "What type of policy is aimed at addressing income inequality?",
+            "optionA": "Monetary Policy",
+            "optionB": "Foreign Policy",
+            "optionC": "Social Policy",
+            "optionD": "Trade Policy",
+            "correctAnswer": 3,
+            "elo": 1100
+          },
+          {
+            "question": "Which policy is commonly used to reduce unemployment?",
+            "optionA": "Expansionary Fiscal Policy",
+            "optionB": "Contractionary Fiscal Policy",
+            "optionC": "Deregulation",
+            "optionD": "Austerity Measures",
+            "correctAnswer": 1,
+            "elo": 1300
+          }
+        ]
+      }
+    },
+    {
+      "quiz": {
+        "name": "Spot the Headline",
+        "description": "Guess the real current event based on the headline provided.",
+        "tag": "Current Events",
+        "img_url": "https://i.postimg.cc/dtpcdSGF/image.png",
+        "questions": [
+          {
+            "question": "Which country recently joined the BRICS economic bloc?",
+            "optionA": "Saudi Arabia",
+            "optionB": "Ukraine",
+            "optionC": "South Korea",
+            "optionD": "Turkey",
+            "correctAnswer": 1,
+            "elo": 1000
+          },
+          {
+            "question": "What major technology company faced antitrust lawsuits in 2023?",
+            "optionA": "Meta",
+            "optionB": "Apple",
+            "optionC": "Google",
+            "optionD": "Microsoft",
+            "correctAnswer": 3,
+            "elo": 1200
+          },
+          {
+            "question": "Which country landed a spacecraft on the Moon's South Pole in 2023?",
+            "optionA": "China",
+            "optionB": "India",
+            "optionC": "USA",
+            "optionD": "Russia",
+            "correctAnswer": 2,
+            "elo": 1400
+          }
+        ]
+      }
     }
-  ]
+]
   

@@ -11,7 +11,7 @@ interface User {
   elo: number;
 }
 
-export default function ProfileScreen({ navigation }: { navigation: NavigationProp<any> }) {
+export default function Profile2Screen({ navigation }: { navigation: NavigationProp<any> }) {
   const [userInfo, setUserInfo] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -67,10 +67,10 @@ export default function ProfileScreen({ navigation }: { navigation: NavigationPr
         <Text style={styles.label}>Email:</Text>
         <Text style={styles.value}>{userInfo.email}</Text>
         <Text style={styles.label}>Elo Score:</Text>
-        <Text style={styles.value}>{userInfo.elo}</Text>
+        <Text style={styles.value}>{userInfo.elo+60}</Text>
       </View>
 
-      <BottomNavBar navigation={navigation} currentRouteName={'Profile'} />
+      <BottomNavBar navigation={navigation} currentRouteName={'Profile2'} />
     </View>
   );
 }

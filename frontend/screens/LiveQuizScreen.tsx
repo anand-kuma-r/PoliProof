@@ -39,7 +39,7 @@ const LiveQuizScreen = ({ navigation }: { navigation: NavigationProp<any> }) => 
   const token = (route.params as { token?: string })?.token;
 
   useEffect(() => {
-    const fetchQuiz = async (quizID = 7) => {
+    const fetchQuiz = async (quizID = 16) => {
       try {
         const url = `${Constants.expoConfig?.extra?.API_URL}/get-quiz?quizID=${quizID}`;
         const response = await fetch(url);
@@ -80,6 +80,10 @@ const LiveQuizScreen = ({ navigation }: { navigation: NavigationProp<any> }) => 
     setSocket(newSocket);
     return () => newSocket.close();
   }, [token]);
+
+  const handleNavigateToProfile = () => {
+    navigation.navigate('Profile2');
+  };
 
   const handleAnswerSelection = (answer: number) => {
     if (!socket || isQuizFinished) return;
@@ -127,6 +131,32 @@ const LiveQuizScreen = ({ navigation }: { navigation: NavigationProp<any> }) => 
       } else {
         console.log('Opponent wins by time!');
       }
+      updateElo(playerScore, quiz?.questions.length || 0);
+    }
+  };
+
+  const updateElo = async (score: number, totalQuestions: number) => {
+    const percentage = (score / totalQuestions) * 100;
+    const requestBody = {
+      quizId: quiz?.quizId ?? 0, // Use optional chaining and provide a default value
+      score, // Player's score
+      percentage, // Calculate percentage for Elo update
+    };
+
+    try {
+      const response = await fetch(`${Constants.expoConfig?.extra?.API_URL}/elo-update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to update Elo:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error updating Elo:', error);
     }
   };
 
@@ -178,6 +208,9 @@ const LiveQuizScreen = ({ navigation }: { navigation: NavigationProp<any> }) => 
                 : 'Opponent Wins by Time!'}
             </Text>
           )}
+          <Button mode="contained" onPress={handleNavigateToProfile} style={styles.navigateButton}>
+            Go to Profile
+          </Button>
         </View>
       )}
     </View>
@@ -235,6 +268,12 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#555',
+  },
+  navigateButton: {
+    marginTop: 16,
+    padding: 10,
+    backgroundColor: '#6200ea', // Example color
+    borderRadius: 8,
   },
 });
 
